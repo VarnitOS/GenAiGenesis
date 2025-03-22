@@ -14,6 +14,8 @@ load_dotenv()
 
 # Import the client agent
 from services.client_agent import client_agent
+# Import the vector database service
+from services.vector_db_service import vector_db_service
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -170,6 +172,156 @@ def respond_to_client():
         return jsonify(response)
     except Exception as e:
         logger.error(f"Error in /api/client/respond: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+# Vector Database Endpoints
+
+@app.route('/api/vector-db/stats', methods=['GET'])
+def vector_db_stats():
+    """Get statistics about the vector databases"""
+    try:
+        stats = vector_db_service.get_db_stats()
+        return jsonify({
+            "status": "success",
+            "data": stats
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/vector-db/stats: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/vector-db/search/case-law', methods=['POST'])
+def search_case_law():
+    """Search the case law vector database"""
+    try:
+        data = request.json
+        if not data or 'query' not in data:
+            return jsonify({
+                "status": "error",
+                "message": "Missing required parameter: query"
+            }), 400
+        
+        # Clean input query
+        query = data['query'].strip()
+        
+        # Get optional parameters
+        limit = int(data.get('limit', 5))
+        filters = data.get('filters')
+        
+        # Search the case law database
+        results = vector_db_service.search_case_law(
+            query=query,
+            limit=limit,
+            filters=filters
+        )
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "query": query,
+                "result_count": len(results),
+                "results": results
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/vector-db/search/case-law: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/vector-db/search/statutes', methods=['POST'])
+def search_statutes():
+    """Search the statutes vector database"""
+    try:
+        data = request.json
+        if not data or 'query' not in data:
+            return jsonify({
+                "status": "error",
+                "message": "Missing required parameter: query"
+            }), 400
+        
+        # Clean input query
+        query = data['query'].strip()
+        
+        # Get optional parameters
+        limit = int(data.get('limit', 5))
+        filters = data.get('filters')
+        
+        # Search the statutes database
+        results = vector_db_service.search_statutes(
+            query=query,
+            limit=limit,
+            filters=filters
+        )
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "query": query,
+                "result_count": len(results),
+                "results": results
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/vector-db/search/statutes: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/vector-db/search', methods=['POST'])
+def search_all():
+    """Search both case law and statutes databases"""
+    try:
+        data = request.json
+        if not data or 'query' not in data:
+            return jsonify({
+                "status": "error",
+                "message": "Missing required parameter: query"
+            }), 400
+        
+        # Clean input query
+        query = data['query'].strip()
+        
+        # Get optional parameters
+        limit = int(data.get('limit', 3))  # Lower default since searching both DBs
+        filters = data.get('filters')
+        
+        # Search both databases
+        case_law_results = vector_db_service.search_case_law(
+            query=query,
+            limit=limit,
+            filters=filters.get('case_law') if filters else None
+        )
+        
+        statute_results = vector_db_service.search_statutes(
+            query=query,
+            limit=limit,
+            filters=filters.get('statutes') if filters else None
+        )
+        
+        return jsonify({
+            "status": "success",
+            "data": {
+                "query": query,
+                "case_law": {
+                    "result_count": len(case_law_results),
+                    "results": case_law_results
+                },
+                "statutes": {
+                    "result_count": len(statute_results),
+                    "results": statute_results
+                }
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error in /api/vector-db/search: {str(e)}")
         return jsonify({
             "status": "error",
             "message": str(e)
