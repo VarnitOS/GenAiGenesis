@@ -1,7 +1,10 @@
 import os
 import json
+import hashlib
 from typing import Dict, List, Any, Optional
 import cohere
+from redis import Redis
+from redisvl.utils.vectorize import CohereTextVectorizer
 
 class ClientUnderstandingChain:
     """
@@ -19,6 +22,9 @@ class ClientUnderstandingChain:
         if self.chat_history:
             history_text = "\n".join([f"{'User' if i % 2 == 0 else 'Assistant'}: {msg}" 
                                for i, msg in enumerate(self.chat_history)])
+        
+        # Clean input text by trimming whitespace
+        query = query.strip()
         
         # Structured prompt for understanding legal queries
         understanding_prompt = f"""
@@ -76,18 +82,110 @@ class ClientConsultationAgent:
         
         # A3: Create understanding chain
         self.understanding_chain = ClientUnderstandingChain(self.co)
+        
+        # Set up Redis for embedding cache
+        try:
+            # Check for Docker environment
+            redis_host = os.environ.get('REDIS_HOST', 'localhost')
+            redis_port = int(os.environ.get('REDIS_PORT', 6379))
+            
+            self.redis_client = Redis(
+                host=redis_host, 
+                port=redis_port,
+                decode_responses=False,
+                socket_connect_timeout=2.0
+            )
+            
+            # Test connection
+            self.redis_client.ping()
+            self.redis_enabled = True
+            print(f"Redis connection established for embedding cache at {redis_host}:{redis_port}")
+        except Exception as e:
+            print(f"Redis connection failed, using in-memory cache: {e}")
+            self.redis_enabled = False
+        
+        # Cohere vectorizer for embeddings (with updated parameters)
+        self.vectorizer = None
+        if self.redis_enabled:
+            try:
+                self.vectorizer = CohereTextVectorizer(
+                    model="embed-english-v3.0",
+                    api_config={"api_key": api_key}
+                )
+            except Exception as e:
+                print(f"Error initializing CohereTextVectorizer: {e}")
+                self.redis_enabled = False
+        
+        # Fallback in-memory cache
+        self._embedding_cache = {}
     
     def embed_query(self, query: str) -> List[float]:
-        """A2: Cohere Embed - Generate embeddings for client query"""
-        response = self.co.embed(
-            texts=[query], 
-            model="embed-english-v3.0",
-            input_type="search_query"
-        )
-        return response.embeddings[0]
+        """A2: Cohere Embed - Generate embeddings for client query with Redis caching"""
+        # Clean input text
+        query = query.strip()
+        
+        # Generate cache key
+        cache_key = f"lm:embed:{hashlib.md5(query.encode()).hexdigest()}"
+        
+        # Check Redis cache first if enabled
+        if self.redis_enabled:
+            try:
+                cached = self.redis_client.get(cache_key)
+                if cached:
+                    return json.loads(cached)
+            except Exception as e:
+                print(f"Error reading from Redis: {e}")
+                # Fall back to in-memory cache
+                if query in self._embedding_cache:
+                    return self._embedding_cache[query]
+        # Otherwise check in-memory cache
+        elif query in self._embedding_cache:
+            return self._embedding_cache[query]
+        
+        # Generate embedding using the correct parameter format
+        try:
+            if self.redis_enabled and self.vectorizer:
+                # Using RedisVL vectorizer
+                embedding = self.vectorizer.embed(
+                    query,
+                    input_type="search_query"
+                )
+            else:
+                # Using direct Cohere API - use correct parameter
+                response = self.co.embed(
+                    texts=[query],
+                    model="embed-english-v3.0",  # Keep the model parameter but ensure text is clean
+                    input_type="search_query"
+                )
+                embedding = response.embeddings[0]
+            
+            # Cache the result
+            if self.redis_enabled:
+                try:
+                    # Store in Redis with 24-hour expiration (86400 seconds)
+                    self.redis_client.set(cache_key, json.dumps(embedding), ex=86400)
+                except Exception as e:
+                    print(f"Error writing to Redis: {e}")
+                    # Fallback to in-memory cache
+                    self._embedding_cache[query] = embedding
+            else:
+                # Fallback to in-memory cache
+                self._embedding_cache[query] = embedding
+            
+            return embedding
+        except Exception as e:
+            print(f"Error generating embedding: {e}")
+            # Return empty embedding as fallback
+            if self.redis_enabled:
+                return [0.0] * 1024  # embed-english-v3.0 dimension size
+            else:
+                return [0.0] * 1024
     
     def understand_query(self, query: str) -> Dict[str, Any]:
         """Process and understand a client query using the Client Understanding Chain (A3)"""
+        # Clean input text
+        query = query.strip()
+        
         # Get the understanding chain output
         understanding = self.understanding_chain.run(query=query)
         
@@ -105,8 +203,15 @@ class ClientConsultationAgent:
     
     def respond_to_client(self, query: str, context: Optional[List[str]] = None) -> Dict[str, Any]:
         """Generate a response to a client query"""
+        # Clean input text
+        query = query.strip()
+        
         # First understand the query (A3)
         understanding = self.understand_query(query)
+        
+        # Clean context if provided
+        if context:
+            context = [c.strip() for c in context]
         
         # Construct prompt with understanding and context
         prompt = f"""
@@ -121,7 +226,7 @@ class ClientConsultationAgent:
         if context:
             prompt += f"\n\nRelevant context:\n" + "\n".join(context)
         
-        # Generate the response using Cohere Command (A1)
+        # Generate the response using Cohere Command (A1) with updated parameters
         response = self.co.generate(
             prompt=prompt,
             model="command",

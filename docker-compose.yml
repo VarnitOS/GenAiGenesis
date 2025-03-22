@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    container_name: legal_redis
+    ports:
+      - "6379:6379"   # Redis port
+      - "8001:8001"   # RedisInsight GUI
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - legal_network
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: legal_backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=8080
+      # Add your Cohere API key in the .env file, which will be used at build time
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+    networks:
+      - legal_network
+
+networks:
+  legal_network:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local 
