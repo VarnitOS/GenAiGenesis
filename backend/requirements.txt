@@ -1,0 +1,9 @@
+cohere==4.47
+flask==3.0.2
+python-dotenv==1.0.0
+pydantic==1.10.8
+python-multipart==0.0.6
+pypdf==3.17.1
+tiktoken==0.5.1
+numpy==1.26.2
+requests==2.31.0 
