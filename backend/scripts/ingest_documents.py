@@ -9,6 +9,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from services.vector_db_service import vector_db_service
 from services.embedding_service import embedding_service
+from services.s3_vector_store import s3_vector_store
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Ingest legal documents into vector databases')
@@ -18,40 +19,48 @@ def parse_args():
                         help='Directory containing documents to ingest (default: data/raw_documents/[source])')
     parser.add_argument('--reset', action='store_true',
                         help='Reset the database before ingesting')
+    parser.add_argument('--force-sync', action='store_true',
+                        help='Force sync with S3 after ingestion')
     return parser.parse_args()
 
 def reset_database(db_type):
     """Reset vector databases by removing collections"""
     if db_type == 'case_law' or db_type == 'all':
         try:
-            collection = embedding_service.client.get_or_create_collection("case_law")
+            collection = embedding_service.case_law_collection
             # Get all document IDs
             result = collection.get()
             if result["ids"]:
                 collection.delete(ids=result["ids"])
-            print(f"Reset case law database")
+                print(f"Reset case law database")
+                if hasattr(embedding_service, '_save_collection_to_s3'):
+                    embedding_service._save_collection_to_s3('case_law')
         except Exception as e:
             print(f"Error resetting case law database: {e}")
             
     if db_type == 'statutes' or db_type == 'all':
         try:
-            collection = embedding_service.client.get_or_create_collection("statutes")
+            collection = embedding_service.statutes_collection
             # Get all document IDs
             result = collection.get()
             if result["ids"]:
                 collection.delete(ids=result["ids"])
-            print(f"Reset statutes database")
+                print(f"Reset statutes database")
+                if hasattr(embedding_service, '_save_collection_to_s3'):
+                    embedding_service._save_collection_to_s3('statutes')
         except Exception as e:
             print(f"Error resetting statutes database: {e}")
         
     if db_type == 'regulations' or db_type == 'all':
         try:
-            collection = embedding_service.client.get_or_create_collection("regulations")
+            collection = embedding_service.regulations_collection
             # Get all document IDs
             result = collection.get()
             if result["ids"]:
                 collection.delete(ids=result["ids"])
-            print(f"Reset regulations database")
+                print(f"Reset regulations database")
+                if hasattr(embedding_service, '_save_collection_to_s3'):
+                    embedding_service._save_collection_to_s3('regulations')
         except Exception as e:
             print(f"Error resetting regulations database: {e}")
 
@@ -114,6 +123,10 @@ def ingest_case_law(directory=None):
         ids=ids
     )
     
+    # Explicitly save to S3 after importing
+    if hasattr(embedding_service, '_save_collection_to_s3'):
+        embedding_service._save_collection_to_s3('case_law')
+    
     # Print the result
     print(f"Ingestion complete. Successfully imported {documents_imported} documents.")
     
@@ -148,6 +161,10 @@ def ingest_statutes(directory=None):
         metadatas=metadatas,
         ids=ids
     )
+    
+    # Explicitly save to S3 after importing
+    if hasattr(embedding_service, '_save_collection_to_s3'):
+        embedding_service._save_collection_to_s3('statutes')
     
     # Print the result
     print(f"Ingestion complete. Successfully imported {documents_imported} documents.")
@@ -184,6 +201,10 @@ def ingest_regulations(directory=None):
         ids=ids
     )
     
+    # Explicitly save to S3 after importing
+    if hasattr(embedding_service, '_save_collection_to_s3'):
+        embedding_service._save_collection_to_s3('regulations')
+    
     # Print the result
     print(f"Ingestion complete. Successfully imported {documents_imported} documents.")
     
@@ -192,6 +213,30 @@ def ingest_regulations(directory=None):
     print(f"Regulations database now contains {stats['regulations']['documents']} documents.")
     
     return documents_imported > 0
+
+def force_s3_sync():
+    """Force a sync with S3 for all collections"""
+    print("Forcing sync with S3...")
+    
+    collections = ["case_law", "statutes", "regulations"]
+    for collection_name in collections:
+        if hasattr(embedding_service, '_save_collection_to_s3'):
+            embedding_service._save_collection_to_s3(collection_name)
+            print(f"Synced {collection_name} collection to S3")
+        else:
+            print(f"Warning: Embedding service doesn't have _save_collection_to_s3 method")
+            break
+    
+    # Also use the S3 API endpoint if available
+    try:
+        import requests
+        response = requests.post("http://localhost:5001/api/s3/sync")
+        if response.status_code == 200:
+            print("Called S3 sync endpoint successfully")
+        else:
+            print(f"Failed to call S3 sync endpoint: {response.status_code} {response.text}")
+    except Exception as e:
+        print(f"Error calling S3 sync endpoint: {e}")
 
 def main():
     """Main entry point"""
@@ -211,6 +256,10 @@ def main():
         
     if args.source == 'regulations' or args.source == 'all':
         success = ingest_regulations(args.directory) and success
+    
+    # Force a sync with S3 if requested
+    if args.force_sync:
+        force_s3_sync()
     
     # Print final status
     if success:

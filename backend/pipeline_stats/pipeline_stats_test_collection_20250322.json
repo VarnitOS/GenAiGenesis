@@ -1,0 +1,21 @@
+{
+  "processed": 9,
+  "succeeded": 0,
+  "failed": 9,
+  "start_time": "2025-03-22T17:11:00.715321",
+  "end_time": "2025-03-22T17:11:00.720186",
+  "errors": [
+    {
+      "error": "Unknown collection: test_collection"
+    },
+    {
+      "error": "Unknown collection: test_collection"
+    }
+  ],
+  "collections": {
+    "test_collection": {
+      "documents": 0,
+      "embeddings": 0
+    }
+  }
+}

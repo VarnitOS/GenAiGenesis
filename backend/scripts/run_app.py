@@ -1,44 +1,32 @@
 #!/usr/bin/env python3
 """
-Run script for the application with S3-only storage for ChromaDB.
+Script to run the Flask application with enhanced S3 vector store support.
 """
 
 import os
 import sys
-import tempfile
 from pathlib import Path
 
 # Add the parent directory to the path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+project_root = Path(__file__).resolve().parent.parent
+sys.path.append(str(project_root))
 
-def main():
-    """Run the application with S3-only storage"""
-    # Get the base directory
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    
-    # Create temporary directory for ChromaDB operations
-    temp_dir = os.path.join(tempfile.gettempdir(), "chromadb_temp")
-    Path(temp_dir).mkdir(parents=True, exist_ok=True)
-    
-    print(f"Using ChromaDB with S3-only storage (temporary dir: {temp_dir})")
-    
-    # Import the app and run it
-    print("\nStarting application...")
-    os.chdir(base_dir)
-    
-    # Run the app using exec to replace the current process
-    sys.path.insert(0, base_dir)
-    app_path = os.path.join(base_dir, 'app.py')
-    
-    # Print debug information
-    print(f"App path: {app_path}")
-    print(f"Current directory: {os.getcwd()}")
-    print("Python path:")
-    for path in sys.path:
-        print(f"  - {path}")
-    
-    # Execute the app
-    os.execv(sys.executable, [sys.executable, app_path])
+# Import the patched S3 vector store
+from services.s3_vector_store_fix import patched_s3_vector_store
+
+# Import the search override
+from services import search_override
+
+# Run the application
+from app import app
 
 if __name__ == "__main__":
-    main() 
+    # Print status information
+    print("Starting Flask application with enhanced S3 vector store support")
+    print(f"S3 enabled: {patched_s3_vector_store.s3_enabled}")
+    if patched_s3_vector_store.s3_enabled:
+        print(f"S3 bucket: {patched_s3_vector_store.s3_bucket}")
+        print(f"S3 prefix: {patched_s3_vector_store.s3_prefix}")
+    
+    # Run the Flask application
+    app.run(host="0.0.0.0", port=5001, debug=True) 

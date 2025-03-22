@@ -1,0 +1,19 @@
+
+    SUPREME COURT OF THE UNITED STATES
+    
+    COMPANY 2 v. SMITH ENTERPRISES
+    
+    Decided: January 15, 2023
+    
+    JUSTICE ROBERTS delivered the opinion of the Court.
+    
+    This case concerns the interpretation of Section 230 of the Communications Decency Act. 
+    The question presented is whether an internet platform can be held liable for content 
+    created by its users when the platform has used algorithmic processes to promote that content.
+    
+    We hold that Section 230 immunity applies even when a platform uses algorithms to recommend content, 
+    so long as the underlying content was created by a third party. The judgment of the Court of Appeals 
+    is affirmed.
+    
+    Citation: 590 U.S. 45 (2023)
+    

@@ -1,0 +1,21 @@
+{
+  "processed": 9,
+  "succeeded": 0,
+  "failed": 9,
+  "start_time": "2025-03-22T17:11:09.475484",
+  "end_time": "2025-03-22T17:11:09.910379",
+  "errors": [
+    {
+      "error": "Error adding documents to collection case_law: 'case_law'"
+    },
+    {
+      "error": "Error adding documents to collection case_law: 'case_law'"
+    }
+  ],
+  "collections": {
+    "case_law": {
+      "documents": 0,
+      "embeddings": 0
+    }
+  }
+}
