@@ -1,0 +1,44 @@
+{
+  "query_id": "query_1742720720",
+  "query": "my landlord evicted me yesterday in california with no authentic reason breaking health code violations. what do i do now?",
+  "client_understanding": {
+    "error": "'ClientConsultationAgent' object has no attribute 'embed_query'"
+  },
+  "research": {
+    "query": "my landlord evicted me yesterday in california with no authentic reason breaking health code violations. what do i do now?",
+    "research_focus": {
+      "domains": [],
+      "concepts": [],
+      "keywords": [],
+      "raw_analysis": "```json\n[\n    \"domains\" => [\"Property Law\", \"Health Care\", \"Landlord-Tenant Law\"],\n    \"concepts\" => [\"Eviction\", \"Residential Health Codes\", \"California\", \"Landlord-Tenant Rights\"],\n    \"keywords\" => [\"eviction california landlord tenant no reason\", \"health code violations\"]\n] \n```  I analyzed your query and identified the following: \n\n- Primary legal domains: Property Law and Health Care \n\n- Specific legal concepts: Eviction, Landlord-Tenant Law, California, Health Codes \n\n- Potential keywords: Legal databases, Housing, Residential, Landlord, Tenant, Health, Codes, Violations, Reason, California Law \n\nI hope this analysis helps you find relevant resources to assist you with your legal matter.  Please feel free to ask follow up questions if you would like to delve deeper into specific legal areas or require additional details."
+    },
+    "vector_results": [],
+    "internet_results": [
+      {
+        "url": "https://www.justia.com/real-estate/landlord-tenant/information-for-tenants/tenant-faqs/",
+        "title": "Tenants' Legal Rights & Duties \u2014 FAQs | Landlord",
+        "snippet": "Oct 18, 2024 \u2014",
+        "source": "www.justia.com"
+      },
+      {
+        "url": "https://www.findlaw.com/realestate/landlord-tenant-law/how-does-the-tenant-prove-that-the-landlord-s-conduct-was-retalia.html",
+        "title": "How To Prove a Landlord's Conduct Was Retaliatory",
+        "snippet": "Jun 12, 2024 \u2014",
+        "source": "www.findlaw.com"
+      },
+      {
+        "url": "https://www.hud.gov/states/california/renting/tenantrights",
+        "title": "Tenant Rights, Laws and Protections: California - Redirect",
+        "snippet": "The page you are looking for has been updated. You will automatically be taken to the new page in 10 seconds. If you have bookmarked this page, ...",
+        "source": "www.hud.gov"
+      }
+    ],
+    "synthesis": "**Relevant Legal Principles and Statutes**\n- The Tenant Protection Act (AB 1482)\n- California Civil Code \u00a7 1940.35 (2023)\n- California Civil Code \u00a7 1942.5(b) (2023)\n- California Health and Safety Code, Section 17920.3\n- California Health and Safety Code, Section 1941.1\n\n**Application to Client's Situation**\nYou have certain rights as a tenant in California, and your landlord is legally required to uphold these rights. The Tenant Protection Act, for instance, prohibits landlords from evicting tenants without \"just cause.\" This Act also caps rent increases for most residential tenants in California. Landlords cannot raise rent more than 10% total or 5% plus the percentage change in the cost of living, whichever is lower, over a 12-month period. \n\nIf your landlord has evicted you without a legitimate reason, you may have grounds to claim illegal retaliation. California law prohibits landlords from taking retaliatory measures against tenants who exercise a legal right. This includes complaining to the landlord about unsafe or illegal living conditions, informing them of potential issues like bed bug infestations, or joining a tenant's union. \n\nIf your landlord is found liable for illegal retaliation, you are entitled to recover any actual damages (such as hotel costs incurred due to the eviction) and punitive damages of $100 to $2,000 for each act of retaliation if fraud, oppression, or malice is proven. \n\nAdditionally, if your landlord has not addressed health and safety code violations in your rental unit, they may be in breach of their legal obligations. California law states that landlords have 35 days from the date of notice to fix any issues identified by a City or County code enforcement agency. If your landlord has failed to do so without good cause, you may be entitled to compensation. \n\n**Next Steps**\n- Act quickly and seek legal assistance as soon as possible. You can find free or low-cost legal aid options at www.LawHelpCA.org.\n- If you don't qualify for legal aid, you may obtain a referral to a certified lawyer referral service from the California State Bar.\n- Consult self-help resources for tenants facing evictions, such as the \"Know Your Rights \u2013 Eviction Process\" guide provided by the California Department of Justice.\n- Be aware of the time limitations for claiming retaliation. In California, a tenant can only claim illegal retaliation against their landlord once in any 12-month period.",
+    "is_municipal_query": false
+  },
+  "final_response": {
+    "response": "Based on our research: **Relevant Legal Principles and Statutes**\n- The Tenant Protection Act (AB 1482)\n- California Civil Code \u00a7 1940.35 (2023)\n- California Civil Code \u00a7 1942.5(b) (2023)\n- California Health and Safety Code, Section 17920.3\n- California Health and Safety Code, Section 1941.1\n\n**Application to Client's Situation**\nYou have certain rights as a tenant in California, and your landlord is legally required to uphold these rights. The Tenant Protection Act, for instance, prohibits landlords from evicting ten..."
+  },
+  "execution_time": 51.828272104263306,
+  "timestamp": "2025-03-23T05:06:11.927900"
+}

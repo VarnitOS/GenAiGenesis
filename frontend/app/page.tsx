@@ -57,8 +57,8 @@ export default function Home() {
   
   const stats = [
     { value: "30K+", label: "Legal Documents Generated" },
-    { value: "98%", label: "User Satisfaction" },
-    { value: "50K+", label: "Legal Questions Answered" },
+    { value: "XX%", label: "User Satisfaction" },
+    { value: "XXK+", label: "Legal Questions Answered" },
     { value: "24/7", label: "AI Availability" }
   ];
 

@@ -1,0 +1,44 @@
+{
+  "query_id": "query_1742719191",
+  "query": "help",
+  "client_understanding": {
+    "error": "'ClientConsultationAgent' object has no attribute 'embed_query'"
+  },
+  "research": {
+    "query": "help",
+    "research_focus": {
+      "domains": [],
+      "concepts": [],
+      "keywords": [],
+      "raw_analysis": "```json\n[\n    \"primary_domains\" => [\"property law\", \"employment law\"],\n    \"specific_legal_concepts\" => [\"employment contract\", \"employee rights\", \"non-compete clause\", \"restrictions\", \"harassment\"],\n    \"potential_keywords\" => [\"employment law\", \"employee benefits\", \"restrictions on discrimination\", \"non-compete agreements\"]\n] \n```  I hope this breakdown helps you with your query!"
+    },
+    "vector_results": [],
+    "internet_results": [
+      {
+        "url": "https://www.eeoc.gov/youth/get-help-if-needed",
+        "title": "Get Help if Needed",
+        "snippet": "Get Help if Needed \u00b7 Employee hotline: 1-800-255-8155 \u00b7 TTY (for people with hearing or speaking disabilities): 1-202-616-5525 & 1-800-237-2515.",
+        "source": "www.eeoc.gov"
+      },
+      {
+        "url": "https://dictionary.findlaw.com/definition/help.html",
+        "title": "Help - FindLaw Dictionary of Legal Terms",
+        "snippet": "The FindLaw Legal Dictionary -- free access to over 8260 definitions of legal terms. Search for a definition or browse our legal glossaries. term: Help. help.",
+        "source": "dictionary.findlaw.com"
+      },
+      {
+        "url": "https://pacer.uscourts.gov/help",
+        "title": "Help | PACER: Federal Court Records",
+        "snippet": "Contact the PACER Service Center to talk to someone about the best ways to search, your bill, and other PACER-related issues.",
+        "source": "pacer.uscourts.gov"
+      }
+    ],
+    "synthesis": "I have identified two sources of help, depending on the nature of your query. \n\n## The PACER Service Center\nThe PACER Service Center can be contacted to discuss the best ways to search, billing, and other PACER-related issues. The Center can be reached at (800) 676-6856 between the hours of 7 a.m. and 6 p.m. CT Monday through Friday or by email at pacer@psc.uscourts.gov.\n\n## The Immigrant and Employee Rights Section (IER) Hotline\nThe IER hotline provides free help to workers and employers. Callers can remain anonymous and language interpretation services are available. The hotline can be reached at 1-800-255-8155 or 1-800-255-7688 Monday through Friday, 9am-5pm ET. \n\n## Next Steps\nIf you are unsure which service to contact, please provide additional details about your query, and I can perform a further search.",
+    "is_municipal_query": false
+  },
+  "final_response": {
+    "response": "Based on our research: I have identified two sources of help, depending on the nature of your query. \n\n## The PACER Service Center\nThe PACER Service Center can be contacted to discuss the best ways to search, billing, and other PACER-related issues. The Center can be reached at (800) 676-6856 between the hours of 7 a.m. and 6 p.m. CT Monday through Friday or by email at pacer@psc.uscourts.gov.\n\n## The Immigrant and Employee Rights Section (IER) Hotline\nThe IER hotline provides free help to workers and employers. Calle..."
+  },
+  "execution_time": 71.6069438457489,
+  "timestamp": "2025-03-23T04:41:03.313307"
+}

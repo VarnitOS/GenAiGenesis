@@ -1,0 +1,44 @@
+{
+  "query_id": "query_1742719720",
+  "query": "What are my rights as a tenant?",
+  "client_understanding": {
+    "error": "'ClientConsultationAgent' object has no attribute 'embed_query'"
+  },
+  "research": {
+    "query": "What are my rights as a tenant?",
+    "research_focus": {
+      "domains": [],
+      "concepts": [],
+      "keywords": [],
+      "raw_analysis": "```json \n[\n    \"primary_domains\" => [\"Property Law\", \"Tenancy Law\"], \n    \"legal_concepts\" => [\"Tenants rights\", \"Residential Property\"], \n    \"search_keywords\" => [\"Tenants rights\", \"Property Law\", \"Residential Property\"]\n] \n```  I analyzed your query and identified the following:\n\n- Primary Domains: Property Law and Tenancy Law \n\n- Legal Concepts: Tenants rights, Residential Property \n\n- Keywords: Tenants rights, Property Law, Residential Property, Landlord and Tenant \n\nI hope this structure helps you to further refine and refine your legal query to legal databases and resources."
+    },
+    "vector_results": [],
+    "internet_results": [
+      {
+        "url": "https://www.findlaw.com/realestate/landlord-tenant-law/tenants-rights-basics.html",
+        "title": "Tenants' Rights Basics",
+        "snippet": "Landlords have the right to receive monthly rent in full by its due date. Tenants also have rights under federal, state, and local laws.",
+        "source": "www.findlaw.com"
+      },
+      {
+        "url": "https://www.hud.gov/states/california/renting/tenantrights",
+        "title": "Tenant Rights, Laws and Protections: California - Redirect",
+        "snippet": "State Information \u00b7 California \u00b7 Rental Help: California - Redirect \u00b7 Tenant Rights, Laws and Protections: California - Redirect.",
+        "source": "www.hud.gov"
+      },
+      {
+        "url": "https://www.justia.com/real-estate/landlord-tenant/information-for-tenants/",
+        "title": "Tenants' Legal Rights & Duties | Landlord",
+        "snippet": "Oct 18, 2024 \u2014",
+        "source": "www.justia.com"
+      }
+    ],
+    "synthesis": "As a tenant, you have rights under federal, state, and local laws. While these rights vary depending on your location, here is a comprehensive analysis of the relevant legal principles, how they apply to your situation, and practical considerations:\n\n## Legal Principles and Application:\n- **Right to Habitation**: In almost every state, tenants have the right to live in a unit that is fit for habitation, safe, and well-maintained. This includes freedom from vermin, leaks, and hazardous conditions.\n- **Freedom from Discrimination**: Tenants are protected from discrimination based on race, color, religion, nationality, gender, sexual orientation, age, marital status, disability, immigrant status, source of income, or legal occupation. This protection extends to families with children.\n- **Right to Privacy**: Tenants have a right to privacy in their homes, balanced with the landlord's right of entry for emergencies, repairs, or inspections with proper notice.\n- **Security Deposit**: You are required to provide a security deposit to cover any damage caused during your tenancy. This deposit should be returned to you after vacating, with deductions for any necessary repairs or cleaning.\n- **Rent Increases**: Landlords typically need to provide proper notice before increasing rent and cannot do so in a discriminatory or retaliatory manner. In some states and cities, rent control laws dictate the amount and frequency of rent increases.\n- **Lease Agreements**: A lease or rental agreement outlines the rights and responsibilities of both parties. It may include details about subletting, rent payments, and any applicable rent control laws.\n- **Termination and Eviction**: If you receive a termination notice from your landlord due to an alleged lease violation, you have the right to fight the eviction in court. If you choose to move out, you have rights regarding the return of your security deposit and reclaiming accidentally abandoned property.\n- **Tenant Screening**: Landlords must provide written disclosure if they reject a rental application based on screening reports. They cannot charge more for screening than the actual cost.\n- **Harassment Protection**: Building owners are prohibited from harassing tenants through verbal or physical abuse, withholding of services, or physical or mental intimidation. Tenants who believe they are being harassed can initiate legal action.\n\n## Practical Considerations:\n- **Legal Representation**: Consider seeking legal help if you have a problem with your landlord or face eviction. In some states, low-income renters may qualify for free legal representation.\n- **Lease Understanding**: Carefully review and understand the nuances of your lease or rental agreement before signing. Clarify any ambiguities with the landlord, and don't be afraid to negotiate additional clauses or changes if needed.\n- **Documentation**: Keep proper documentation of any issues or disputes, such as written notices, inspection reports, and communication with your landlord.\n- **Local Laws**: Familiarize yourself with state and local laws that may impact your rights and responsibilities as a tenant, such as the Residential Landlord-Tenant Act (RLTA) or similar legislation in your state.\n- **Tenant Resources**: Utilize tenant resources available in your area, such as tenant helplines or local tenant protection services, to better understand your rights and receive assistance.\n\n## Limitations and Further Research:\nThis response provides a general overview of tenant rights and may not cover all relevant laws or specific circumstances. Further research is needed to address state-specific variations in tenant rights, particularly regarding rent control, security deposit regulations, and local housing authority resources.",
+    "is_municipal_query": false
+  },
+  "final_response": {
+    "response": "Based on our research: As a tenant, you have rights under federal, state, and local laws. While these rights vary depending on your location, here is a comprehensive analysis of the relevant legal principles, how they apply to your situation, and practical considerations:\n\n## Legal Principles and Application:\n- **Right to Habitation**: In almost every state, tenants have the right to live in a unit that is fit for habitation, safe, and well-maintained. This includes freedom from vermin, leaks, and hazardous conditions..."
+  },
+  "execution_time": 112.53846502304077,
+  "timestamp": "2025-03-23T04:50:33.277254"
+}

@@ -1,0 +1,44 @@
+{
+  "query_id": "query_1742721650",
+  "query": "What are the current legal requirements for employment-based immigration visas in the United States, particularly for H-1B and EB-2 categories? I need to understand the application process, eligibility criteria, and recent policy changes that might affect an employer sponsoring foreign workers.",
+  "client_understanding": {
+    "error": "'ClientConsultationAgent' object has no attribute 'embed_query'"
+  },
+  "research": {
+    "query": "What are the current legal requirements for employment-based immigration visas in the United States, particularly for H-1B and EB-2 categories? I need to understand the application process, eligibility criteria, and recent policy changes that might affect an employer sponsoring foreign workers.",
+    "research_focus": {
+      "domains": [],
+      "concepts": [],
+      "keywords": [],
+      "raw_analysis": "```json\n{\n   \"primary_domains\": [\"Immigration\", \"Employment Law\", \"US Law\"],\n   \"specific_concepts\": [\"Immigration Act\", \"Employment Based Immigration\", \"H-1B Visa\", \"EB-2 Visa\", \"Visa Sponsorship\", \"Policy Changes\"],\n   \"keywords\": [\"employment immigration\", \"sponsorship\", \"visa\", \"US immigration requirements\", \"recent policy changes\"]\n} \n```  I analyzed your query for the current legal requirements regarding employment-based immigration visas in the United States. I identified the specific legal domains and concepts that are related to your query, and I also found some relevant keywords that can be used to search legal databases."
+    },
+    "vector_results": [],
+    "internet_results": [
+      {
+        "url": "https://www.law.cornell.edu/cfr/text/8/204.5",
+        "title": "8 CFR \u00a7 204.5 - Petitions for employment-based immigrants.",
+        "snippet": "A petition to classify an alien under section 203(b)(1), 203(b)(2), or 203(b)(3) of the Act must be filed on Form I\u2013140, Petition for Immigrant Worker.",
+        "source": "www.law.cornell.edu"
+      },
+      {
+        "url": "https://www.law.cornell.edu/uscode/text/8/1101",
+        "title": "8 U.S. Code \u00a7 1101 - Definitions | LII / Legal Information Institute",
+        "snippet": "The term \u201cnonimmigrant visa\u201d means a visa properly issued to an alien as an eligible nonimmigrant by a competent officer as provided in this chapter.",
+        "source": "www.law.cornell.edu"
+      },
+      {
+        "url": "https://www.supremecourt.gov/DocketPDF/24/24-923/343237/20250220125212183_24-%20Petition.pdf",
+        "title": "Petition for Writ of Certiorari",
+        "snippet": "1. Whether the Department of Homeland Security can grant work authorization for classes of nonimmi- grants for whom Congress has refused to grant work.",
+        "source": "www.supremecourt.gov"
+      }
+    ],
+    "synthesis": "## Relevant Legal Principles, Statutes, and Regulations\nThe H-1B visa is a non-immigrant visa that allows employers to hire foreign professionals in \"specialty occupations\", such as mathematics, engineering, technology, and medical sciences. The H-1B visa is typically valid for three years and can be extended up to six years. The annual limit for new H-1B visas is 65,000, with an additional 20,000 petitions for beneficiaries with a master's degree or higher from a U.S. institution. \n\nThe EB-2 visa is an employment-based, second preference visa for members of professions holding advanced degrees or their equivalent or individuals with exceptional ability. \n\n## Application Process and Eligibility Criteria for H-1B and EB-2 Visas\n### H-1B Visa: \n**Application Process:**\n1. The employer/agent submits a Labor Condition Application (LCA) to the Department of Labor (DOL) for certification. \n2. The employer/agent submits Form I-129, Petition for a Nonimmigrant Worker, to the United States Citizenship and Immigration Services (USCIS). \n3. The prospective employee outside the U.S. applies for a visa and/or admission. If the Form I-129 petition is approved, the prospective employee applies to the U.S. Department of State (DOS) at a U.S. Embassy or Consulate abroad for an H-1B visa (if required). \n4. The prospective employee then applies to U.S. Customs and Border Protection (CBP) for admission to the U.S. in H-1B classification. \n\n**Eligibility Criteria:** \nThe H-1B visa is for \"specialty occupations\" that require at least a bachelor's degree or its equivalent. The employer must ensure that hiring a foreign worker will not negatively impact U.S. workers, and they must provide notice of their intention to hire an H-1B worker to existing employees. \n\n### EB-2 Visa: \n**Application Process:** \nSecond preference petitions are filed using Form I-140, Immigrant Petition for Alien Workers. A U.S. employer must file this form on the employee's behalf unless the petition is based on a national interest waiver, in which case the employee may file it themselves. \n\n**Eligibility Criteria:** \nThe EB-2 visa is for individuals with advanced degrees (beyond a bachelor's degree) or a bachelor's degree with at least five years of progressive experience in their profession. The applicant must provide evidence that their occupation is a profession that typically requires a bachelor's degree for entry. \n\n## Recent Policy Changes\n### H-1B Visa: \nUSCIS changed from an employer-based to a beneficiary-centric registration system beginning in FY 2025. This change aimed to limit potential abuse of the system by preventing multiple registrations for the same beneficiary, which could increase their selection odds. \n\n### EB-2 Visa: \nAs of June 1, 2023, labor certification applications are filed using the Department of Labor's Foreign Labor Application Gateway (FLAG) system. \n\n## Considerations for Employers Sponsoring Foreign Workers\n### H-1B Visa: \nEmployers must attest that hiring an H-1B worker will not adversely affect the wages and working conditions of similarly employed U.S. workers. They must also provide notice of their intention to hire an H-1B worker to existing employees. Employers are responsible for the reasonable costs of the employee's return transportation if they terminate employment before the authorized stay period ends. \n\n### EB-2 Visa: \nSecond preference petitions are usually accompanied by a signed and approved Application for Permanent Employment Certification (Form ETA-9089) from the Department of Labor. However, certain occupations, referred to as Schedule A occupations, do not require this certification as the DOL has determined that there are insufficient U.S. workers available. \n\n## Limitations and Further Research\nThis response provides an overview of the application process, eligibility criteria, and recent policy changes for H-1B and EB-2 visas. However, it is important to note that immigration law is complex and constantly evolving. For specific cases and the most up-to-date information, further research and consultation with immigration experts are recommended. \n\n## Practical Next Steps for Clients\nFor employers considering sponsoring foreign workers on H-1B or EB-2 visas, the following steps may be helpful: \n- Consult with an immigration lawyer to ensure compliance with the most current regulations and to guide you through the application process. \n- For H-1B visas, ensure you have taken the necessary steps to protect U.S. workers' wages and working conditions and provide notice to existing employees. \n- For EB-2 visas, determine if the occupation falls under the Schedule A category, which does not require labor certification due to a shortage of available U.S. workers. \n- Gather the required documentation, including educational qualifications, work experience, and evidence of the occupation's specialty nature. \n- Be prepared to demonstrate how hiring a foreign worker will benefit the U.S. economy and address any potential concerns about its impact on U.S. workers. \n- Stay informed about any further policy changes or updates to the application process to ensure a smooth and efficient sponsorship process.",
+    "is_municipal_query": false
+  },
+  "final_response": {
+    "response": "Based on our research: ## Relevant Legal Principles, Statutes, and Regulations\nThe H-1B visa is a non-immigrant visa that allows employers to hire foreign professionals in \"specialty occupations\", such as mathematics, engineering, technology, and medical sciences. The H-1B visa is typically valid for three years and can be extended up to six years. The annual limit for new H-1B visas is 65,000, with an additional 20,000 petitions for beneficiaries with a master's degree or higher from a U.S. institution. \n\nThe EB-2 vi..."
+  },
+  "execution_time": 115.19060516357422,
+  "timestamp": "2025-03-23T05:22:46.179639"
+}

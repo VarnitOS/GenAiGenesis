@@ -10,7 +10,7 @@ load_dotenv()
 co = cohere.Client(os.environ.get('COHERE_API_KEY'))
 
 # Initialize ChromaDB client
-chroma_client = chromadb.PersistentClient(path="./chroma_db")
+chroma_client = chromadb.PersistentClient(path="./backend/data/vector_db/chroma_db")
 
 def extract_text_from_pdf(pdf_path):
     """Extract text from a PDF file"""
@@ -53,7 +53,7 @@ def clear_collection():
 
 
 def main(pdf_path):
-    clear_collection()
+    # clear_collection()
     """Main function to process the PDF and store embeddings"""
     text = extract_text_from_pdf(pdf_path)
     embedding = embed_text(text)

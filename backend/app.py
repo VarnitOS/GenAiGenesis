@@ -1,599 +1,352 @@
-from flask import Flask, request, jsonify, send_from_directory
-from services.vector_db_service import vector_db_service
-from services.client_agent import client_agent
-from services.research_agent import research_agent
-from services.embedding_service import embedding_service, S3_ENABLED
+#!/usr/bin/env python3
+"""
+Legal Research API
+
+This Flask application exposes the legal research pipeline as a REST API.
+It processes legal queries through:
+1. Client Understanding (Model A)
+2. Legal Research (Model B)
+3. Final Response Generation
+
+Usage:
+  python app.py
+"""
+
 import os
+import json
+import time
 import logging
+from datetime import datetime
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-import cohere
 from dotenv import load_dotenv
+import re
 
-load_dotenv()    
+# Load environment variables
+load_dotenv()
 
-# Import search override to ensure it patches the vector_db_service
-from services import search_override
-from services.client_agent import client_agent
-from services.vector_db_service import vector_db_service
-# Import document data for recreation
-from scripts.fix_embeddings import CASE_LAW_DOCUMENTS, STATUTE_DOCUMENTS, REGULATION_DOCUMENTS
-
-
-
-# Set up logging
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format='[%(asctime)s] [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler("pipeline.log"),
+        logging.StreamHandler()
+    ]
 )
 logger = logging.getLogger(__name__)
 
+# Check required environment variables
+required_env_vars = ['COHERE_API_KEY', 'SERPAPI_KEY']
+missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
+if missing_vars:
+    logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
+    logger.error("Please set them in your .env file or export them in your shell.")
+    exit(1)
+
+# Import services
+from services.client_agent import client_agent
+from services.research_agent import research_agent
+from services.vector_db_service import vector_db_service
+
+# Initialize Flask app
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
-# Initialize Cohere client
-co = cohere.Client(os.environ.get('COHERE_API_KEY'))
+# Store in-memory results (in production, use a database)
+query_results = {}
 
-# Enable CORS
-CORS(app)
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": "1.0.0"
+    })
 
-# Register blueprints
-
-# Adding manual CORS headers
-@app.after_request
-def add_cors_headers(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    return response
-
-def recreate_collection(collection_name):
-    """Recreate a collection with proper embeddings"""
-    print(f"Recreating {collection_name} collection")
-    
-    try:
-        # Choose the correct collection and documents
-        if collection_name == "case_law":
-            collection_obj = embedding_service.case_law_collection
-            docs_data = CASE_LAW_DOCUMENTS
-        elif collection_name == "statutes":
-            collection_obj = embedding_service.statutes_collection
-            docs_data = STATUTE_DOCUMENTS
-        elif collection_name == "regulations":
-            collection_obj = embedding_service.regulations_collection
-            docs_data = REGULATION_DOCUMENTS
-        else:
-            raise ValueError(f"Unknown collection: {collection_name}")
-        
-        # Try to delete the collection (may fail if it doesn't exist)
-        try:
-            collection_obj.delete(where={"_id": {"$exists": True}})
-        except Exception as e:
-            print(f"Error deleting collection: {e}")
-        
-        # Prepare data
-        documents = [doc["document"] for doc in docs_data]
-        metadatas = [doc["metadata"] for doc in docs_data]
-        ids = [doc["id"] for doc in docs_data]
-        
-        # Generate embeddings the same way
-        embeddings = embedding_service.generate_embeddings(documents)
-        
-        # Add documents with embeddings
-        collection_obj.add(
-            documents=documents,
-            embeddings=embeddings,
-            metadatas=metadatas,
-            ids=ids
-        )
-        print(f"Added {len(documents)} documents to {collection_name} collection")
-        return True
-    except Exception as e:
-        print(f"Error recreating collection: {e}")
-        return False
-
-@app.route('/api/search', methods=['POST'])
-def search():
-    """Search the vector database"""
-    try:
-        data = request.json
-        query = data.get('query', '')
-        collection = data.get('collection', 'case_law')
-        top_k = int(data.get('top_k', 5))
-        
-        if not query:
-            return jsonify({"error": "Query is required"}), 400
-        
-        # Use the new search method
-        results = vector_db_service.search(query=query, collection_name=collection, top_k=top_k)
-        
-        return jsonify(results)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/stats', methods=['GET'])
-def get_stats():
-    """Get statistics about the vector database"""
-    try:
-        stats = vector_db_service.get_stats()
-        return jsonify(stats)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# @app.route('/api/client/understand', methods=['POST'])
-# def understand_client():
-#     """Process and understand a client query using Model A"""
-#     data = request.json
-    
-#     if not data or 'query' not in data:
-#         return jsonify({"error": "Query is required"}), 400
-    
-#     query = data['query']
-    
-#     try:
-#         # Get understanding using client agent (Model A)
-#         understanding = client_agent.understand_query(query)
-        
-#         return jsonify(understanding)
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-
-@app.route('/api/research', methods=['POST'])
-def research():
-    """Conduct legal research using Model B (Legal Research Agent)"""
+@app.route('/api/query', methods=['POST'])
+def process_query():
+    """Process a legal query through the pipeline"""
     data = request.json
     
     if not data or 'query' not in data:
-        return jsonify({"error": "Query is required"}), 400
+        return jsonify({"error": "Missing 'query' in request body"}), 400
     
     query = data['query']
-    collections = data.get('collections', None)  # Optional collections to search
-    top_k = data.get('top_k', 3)  # Default to 3 results per collection
+    query_id = f"query_{int(time.time())}"
     
     try:
-        # Conduct research using research agent (Model B)
-        results = research_agent.conduct_research(
-            query=query,
-            collections=collections,
-            top_k=top_k
-        )
+        logger.info(f"Processing new query: '{query}'")
         
-        return jsonify(results)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/s3/sync', methods=['POST'])
-def sync_s3():
-    """Force synchronization with S3"""
-    try:
-        if hasattr(embedding_service, 'sync_all_with_s3'):
-            success = embedding_service.sync_all_with_s3()
-        else:
-            from services.s3_vector_store import s3_vector_store
-            success = s3_vector_store.sync_all_collections()
+        # Start timing
+        start_time = time.time()
         
-        return jsonify({"success": success})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# @app.route('/', methods=['GET'])
-# def home():
-#     """Home page redirects to the API documentation"""
-#     return send_from_directory('static', 'index.html')
-
-# Health check
-@app.route('/health')
-def health():
-    return jsonify({
-        'status': 'healthy'
-    })
-
-# Error handler
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({
-        'error': 'Not found',
-        'message': str(error)
-    }), 404
-
-# Error handler
-@app.errorhandler(500)
-def server_error(error):
-    logger.error(f"Server error: {error}")
-    return jsonify({
-        'error': 'Server error',
-        'message': str(error)
-    }), 500
-
-<<<<<<< HEAD
-
-@app.route('/', methods=['GET'])
-def home():
-    return jsonify({
-        "status": "success",
-        "message": "Welcome to the LegalMind AI API"
-    })
-
-@app.route('/test')
-def test():
-    return jsonify({
-        "status": "success",
-        "data": {
-            "name": "LegalMind AI",
-            "version": "0.1.0"
+        # Step 1: Client Understanding
+        client_understanding = run_client_understanding(query)
+        
+        # Step 2: Legal Research
+        research_results = run_legal_research(query)
+        
+        # Step 3: Generate Final Response
+        final_response = generate_final_response(query, client_understanding, research_results)
+        
+        # Calculate timing
+        execution_time = time.time() - start_time
+        
+        # Create complete result object
+        result = {
+            "query_id": query_id,
+            "query": query,
+            "client_understanding": client_understanding,
+            "research": research_results,
+            "final_response": final_response,
+            "execution_time": execution_time,
+            "timestamp": datetime.now().isoformat()
         }
-    })
-
-@app.route('/api/embed', methods=['POST'])
-def embed_text():
-    """Generate embeddings for the provided text"""
-    try:
-        data = request.json
-        if not data or 'text' not in data:
-            return jsonify({
-                "status": "error",
-                "message": "Missing required parameter: text"
-            }), 400
         
-        # Clean input text
-        text = data['text'].strip()
+        # Store result for later retrieval (keep this for persistence)
+        query_results[query_id] = result
         
-        # Generate embeddings - Use model parameter correctly
-        # response = co.embed(
-        #     texts=[text],
-        #     model="embed-english-v3.0",  # Keep the model parameter but ensure text is clean
-        #     input_type="search_query"
-        # )
-        embeddings = embedding_service.generate_embeddings([text], model="embed-english-v3.0", cache_key=f"query:{text}")
+        # Save to file for persistence (keep this too)
+        save_result_to_file(result)
         
-        return jsonify({
-            "status": "success",
-            "data": {
-                "embeddings": embeddings[0][:10] + ["..."],  # Truncated for readability
-                "model": "embed-english-v3.0"
-            }
-        })
+        logger.info(f"Pipeline completed in {execution_time:.2f} seconds")
+        
+        # Format the final response as clean markdown before sending to frontend
+        result = prepare_markdown_response(result)
+        
+        # Return the COMPLETE result to the client
+        return jsonify(result)
+        
     except Exception as e:
-        logger.error(f"Error in /api/embed: {str(e)}")
+        logger.error(f"Error processing query: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        
         return jsonify({
+            "query_id": query_id,
             "status": "error",
-            "message": str(e)
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
         }), 500
 
-@app.route('/api/generate', methods=['POST'])
-def generate_text():
-    """Generate text based on the provided prompt"""
-    try:
-        data = request.json
-        if not data or 'prompt' not in data:
-            return jsonify({
-                "status": "error",
-                "message": "Missing required parameter: prompt"
-            }), 400
-        
-        # Clean input prompt
-        prompt = data['prompt'].strip()
-        
-        # Set parameters with defaults
-        max_tokens = int(data.get('max_tokens', 300))
-        temperature = float(data.get('temperature', 0.7))
-        
-        # Generate text
-        response = co.generate(
-            prompt=prompt,
-            model="command",
-            max_tokens=max_tokens,
-            temperature=temperature
-        )
-        
-        return jsonify({
-            "status": "success",
-            "data": {
-                "text": response.generations[0].text,
-                "model": "command"
-            }
-        })
-    except Exception as e:
-        logger.error(f"Error in /api/generate: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+@app.route('/api/results/<query_id>', methods=['GET'])
+def get_result(query_id):
+    """Get the detailed results for a specific query"""
+    if query_id not in query_results:
+        # Try to load from file if not in memory
+        try:
+            result = load_result_from_file(query_id)
+            if result:
+                return jsonify(result)
+        except:
+            pass
+            
+        return jsonify({"error": "Query ID not found"}), 404
+    
+    return jsonify(query_results[query_id])
 
-@app.route('/api/client/understand', methods=['POST'])
-def understand_client():
-    """Process and understand a client query"""
+@app.route('/api/vector-search', methods=['POST'])
+def vector_search():
+    """Search the vector database directly"""
+    data = request.json
+    
+    if not data or 'query' not in data:
+        return jsonify({"error": "Missing 'query' in request body"}), 400
+    
+    query = data['query']
+    limit = data.get('limit', 5)
+    
     try:
-        data = request.json
-        if not data or 'query' not in data:
-            return jsonify({
-                "status": "error",
-                "message": "Missing required parameter: query"
-            }), 400
+        # Use vector_db_service to search
+        results = vector_db_service.search(query, limit=limit)
+        return jsonify({"results": results})
         
-        # Clean input query
-        query = data['query'].strip()
-        
-        # Get understanding using client agent
+    except Exception as e:
+        logger.error(f"Error in vector search: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+def run_client_understanding(query):
+    """Run the client understanding agent (Model A)"""
+    try:
+        # The client agent might return different formats, handle both possibilities
         understanding = client_agent.understand_query(query)
         
-        return jsonify({
-            "query": understanding["original_query"],
-            "analysis": understanding["analysis"],
-            "embedding_sample": understanding["embeddings"]
-        })
+        # Check if understanding is a string (error message)
+        if isinstance(understanding, str):
+            return {"error": understanding}
+            
+        # If it's a dict with these keys, it's the standard response format
+        if isinstance(understanding, dict) and all(key in understanding for key in ["original_query", "analysis"]):
+            return understanding
+            
+        # Otherwise wrap it in a standard format
+        return {
+            "original_query": query,
+            "analysis": understanding
+        }
     except Exception as e:
-        logger.error(f"Error in /api/client/understand: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+        logger.error(f"Error in client understanding: {str(e)}")
+        return {"error": str(e)}
 
-@app.route('/api/client/respond', methods=['POST'])
-def respond_to_client():
-    """Generate a response to a client query"""
+def run_legal_research(query):
+    """Run the legal research agent (Model B)"""
     try:
-        data = request.json
-        if not data or 'query' not in data:
-            return jsonify({
-                "status": "error",
-                "message": "Missing required parameter: query"
-            }), 400
+        logger.info(f"Starting research for query: {query}")
         
-        # Clean input query
-        query = data['query'].strip()
-        
-        # Get optional context
-        context = data.get('context')
-        if context:
-            # Ensure context is a list and clean items
-            if not isinstance(context, list):
-                context = [context]
-            context = [c.strip() for c in context]
-        
-        # Generate response using client agent
-        response = client_agent.respond_to_client(query, context)
-        
-        return jsonify(response)
+        # Use a try/except block specifically for the research_agent call
+        try:
+            research = research_agent.conduct_research(query)
+            logger.info("Research agent returned successfully")
+            
+            # Validate the research result structure
+            if not isinstance(research, dict):
+                logger.warning(f"Warning: research_agent returned non-dict type: {type(research)}")
+                return {"error": f"Invalid research result type: {type(research)}"}
+            
+            # Check for critical fields
+            vector_results = research.get('vector_results', [])
+            internet_results = research.get('internet_results', [])
+            synthesis = research.get('synthesis', '')
+            
+            logger.info(f"Vector results: {len(vector_results)}, Internet results: {len(internet_results)}")
+            logger.info(f"Synthesis length: {len(synthesis)}")
+            
+            return research
+            
+        except Exception as inner_e:
+            logger.error(f"Inner exception in research agent: {str(inner_e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {"error": f"Research agent error: {str(inner_e)}"}
+            
     except Exception as e:
-        logger.error(f"Error in /api/client/respond: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+        logger.error(f"Error in legal research: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"error": str(e)}
 
-# Vector Database Endpoints
-
-@app.route('/api/vector-db/stats', methods=['GET'])
-def vector_db_stats():
-    """Get statistics about the vector databases"""
+def generate_final_response(query, client_understanding, research_results):
+    """Generate the final response by combining client understanding and research"""
     try:
-        stats = vector_db_service.get_db_stats()
-        return jsonify({
-            "status": "success",
-            "data": stats
-        })
-    except Exception as e:
-        logger.error(f"Error in /api/vector-db/stats: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+        # Extract analysis from client understanding
+        analysis = client_understanding.get("analysis", "")
+        
+        # Extract primary concerns - handle both string and dict formats
+        if isinstance(analysis, dict) and "primary_concerns" in analysis:
+            primary_concerns = ", ".join(analysis.get("primary_concerns", []))
+        else:
+            # Try to extract concerns from text analysis
+            primary_concerns = "understanding legal requirements"
+        
+        # Get research synthesis
+        synthesis = research_results.get("synthesis", "")
+        
+        # Create a context that combines the research and understanding
+        combined_context = f"""
+Client Query: {query}
 
-@app.route('/api/vector-db/search/case-law', methods=['POST'])
-def search_case_law():
-    """Search the case law vector database"""
-    try:
-        data = request.json
-        if not data or 'query' not in data:
-            return jsonify({
-                "status": "error",
-                "message": "Missing required parameter: query"
-            }), 400
-        
-        # Clean input query
-        query = data['query'].strip()
-        
-        # Get optional parameters
-        limit = int(data.get('limit', 5))
-        filters = data.get('filters')
-        
-        # Use the new search method
-        results = vector_db_service.search(query=query, collection_name='case_law', top_k=limit)
-        
-        return jsonify({
-            "status": "success",
-            "data": {
-                "query": query,
-                "result_count": len(results['results']),
-                "results": results['results']
-            }
-        })
-    except Exception as e:
-        logger.error(f"Error in /api/vector-db/search/case-law: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+Primary Client Concerns: {primary_concerns}
 
-@app.route('/api/vector-db/search/statutes', methods=['POST'])
-def search_statutes():
-    """Search the statutes vector database"""
-    try:
-        data = request.json
-        if not data or 'query' not in data:
-            return jsonify({
-                "status": "error",
-                "message": "Missing required parameter: query"
-            }), 400
-        
-        # Clean input query
-        query = data['query'].strip()
-        
-        # Get optional parameters
-        limit = int(data.get('limit', 5))
-        filters = data.get('filters')
-        
-        # Use the new search method
-        results = vector_db_service.search(query=query, collection_name='statutes', top_k=limit)
-        
-        return jsonify({
-            "status": "success",
-            "data": {
-                "query": query,
-                "result_count": len(results['results']),
-                "results": results['results']
-            }
-        })
-    except Exception as e:
-        logger.error(f"Error in /api/vector-db/search/statutes: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
-
-@app.route('/api/vector-db/search', methods=['POST'])
-def search_all():
-    """Search case law, statutes, and regulations databases"""
-    try:
-        data = request.json
-        if not data or 'query' not in data:
-            return jsonify({
-                "status": "error",
-                "message": "Missing required parameter: query"
-            }), 400
-        
-        # Clean input query
-        query = data['query'].strip()
-        
-        # Get optional parameters
-        limit = int(data.get('limit', 3))  # Lower default since searching all DBs
-        filters = data.get('filters')
-        
-        # Use the new search method for each collection
-        case_law_results = vector_db_service.search(query=query, collection_name='case_law', top_k=limit)
-        statute_results = vector_db_service.search(query=query, collection_name='statutes', top_k=limit)
-        regulations_results = vector_db_service.search(query=query, collection_name='regulations', top_k=limit)
-        
-        return jsonify({
-            "status": "success",
-            "data": {
-                "query": query,
-                "case_law": {
-                    "result_count": len(case_law_results['results']),
-                    "results": case_law_results['results']
-                },
-                "statutes": {
-                    "result_count": len(statute_results['results']),
-                    "results": statute_results['results']
-                },
-                "regulations": {
-                    "result_count": len(regulations_results['results']),
-                    "results": regulations_results['results']
-                }
-            }
-        })
-    except Exception as e:
-        logger.error(f"Error in /api/vector-db/search: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
-=======
-# FORM IMAGE HANDLER
-
-@app.route('/analyze', methods=['POST'])
-def analyze_form():
-    if 'form_image' not in request.files:
-        return jsonify({"error": "No image uploaded"}), 400
-    
-    # Get image and knowledge level
-    file = request.files['form_image']
-    knowledge_level = int(request.form.get('knowledge_level', 1))
-    
-    # Process the image
-    img = Image.open(file.stream)
-    img_array = np.array(img)
-    
-    # Convert to grayscale if not already
-    if len(img_array.shape) > 2 and img_array.shape[2] > 1:
-        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-    else:
-        gray = img_array
-    
-    # Apply preprocessing to improve OCR accuracy
-    thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-    
-    # Perform OCR
-    text = pytesseract.image_to_string(thresh)
-    
-    # Identify form type
-    form_type = identify_form(text)
-    
-    # Use Cohere's API to generate an explanation
-    explanation = generate_explanation_with_cohere(form_type, text, knowledge_level)
-    
-    return jsonify({
-        "form_type": form_type,
-        "extracted_text": text,
-        "explanation": explanation
-    })
-
-def generate_explanation_with_cohere(form_type, text, knowledge_level):
-    """Use Cohere's Command API to generate an explanation for the form"""
-    try:
-        # Initialize the Cohere client
-        co = cohere.Client(COHERE_API_KEY)
-        
-        # Prepare the prompt based on knowledge level
-        expertise_level = "basic" if knowledge_level == 1 else "intermediate" if knowledge_level == 2 else "advanced"
-        
-        prompt = f"""
-        This is a legal form that has been identified as {form_type if form_type != "Unknown Form" else "an unknown legal form"}.
-        The OCR extracted the following text from the form:
-        
-        {text[:2000]}  # Limiting text length to respect token limits
-        
-        Please provide an explanation of this form in {expertise_level} language, explaining:
-        1. What is this form used for?
-        2. What are the key fields that need to be filled out?
-        3. What does each field mean and how should it be completed?
-        
-        The explanation should be appropriate for someone with {expertise_level} knowledge of legal terminology and concepts.
+Legal Research Findings:
+{synthesis}
         """
         
-        # Generate a response using Cohere's Command model
-        response = co.generate(
-            model="command",
-            prompt=prompt,
-            max_tokens=1000,
-            temperature=0.3,
-            k=0,
-            stop_sequences=[],
-            return_likelihoods="NONE"
-        )
+        # Generate response
+        try:
+            response = client_agent.respond_to_client(query, [combined_context])
+            return response
+        except Exception as e:
+            logger.error(f"Error from client agent: {str(e)}")
+            # Fallback to simple format if client agent fails
+            return {
+                "response": f"Based on our research: {synthesis[:500]}..."
+            }
+            
+    except Exception as e:
+        logger.error(f"Error generating final response: {str(e)}")
+        return {"error": str(e)}
+
+def save_result_to_file(result):
+    """Save a result to a JSON file for persistence"""
+    try:
+        # Create directory if it doesn't exist
+        os.makedirs("results", exist_ok=True)
         
-        # Extract and return the generated text
-        explanation = response.generations[0].text.strip()
+        query_id = result["query_id"]
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"results/{query_id}_{timestamp}.json"
         
-        return {
-            "title": form_type if form_type != "Unknown Form" else "Unknown Legal Form",
-            "explanation": explanation
-        }
+        with open(filename, 'w') as f:
+            json.dump(result, f, indent=2)
+            
+        logger.info(f"Saved result to {filename}")
         
     except Exception as e:
-        # Log the error and return a fallback explanation
-        print(f"Error using Cohere API: {e}")
-        return {
-            "title": form_type if form_type != "Unknown Form" else "Unknown Legal Form",
-            "explanation": "We encountered an error while generating the explanation. Please try again later."
-        }
+        logger.error(f"Error saving result to file: {str(e)}")
 
->>>>>>> 653daee8f69c1dc6e1b76b44189eb374d7254240
+def load_result_from_file(query_id):
+    """Try to load a result from a JSON file"""
+    try:
+        # Find files matching the query ID pattern
+        import glob
+        files = glob.glob(f"results/{query_id}_*.json")
+        
+        if not files:
+            return None
+            
+        # Use the most recent file
+        filename = sorted(files)[-1]
+        
+        with open(filename, 'r') as f:
+            return json.load(f)
+            
+    except Exception as e:
+        logger.error(f"Error loading result from file: {str(e)}")
+        return None
 
-
-if __name__ == '__main__':
-    # Get port from environment or use default
-    # port = int(os.environ.get('PORT', 5000))
-    port = int(os.environ.get('PORT', 8081))
+def prepare_markdown_response(result):
+    """Format the final response as clean markdown before sending to frontend."""
+    if not result:
+        return result
+        
+    # Check if final_response exists and is a dictionary
+    if 'final_response' not in result:
+        return result
     
-    # Run app
-    app.run(host='0.0.0.0', port=port)
+    # If final_response is already a dictionary, return as is
+    if isinstance(result['final_response'], dict):
+        return result
+    
+    # Only process if final_response is a string
+    response_text = result['final_response']
+    if not isinstance(response_text, str):
+        return result
+    
+    # Now that we're sure it's a string, we can proceed with formatting
+    # Remove any trailing ellipses and complete sentences
+    if response_text.strip().endswith('...'):
+        response_text = response_text.strip()[:-3] + '.'
+    
+    # Clean up formatting artifacts
+    # Remove excess asterisks but preserve proper markdown
+    response_text = re.sub(r'\*\*([^*]+)\*\*\*+:\*\*', r'**\1:** ', response_text)
+    response_text = re.sub(r'\*{3,}', '', response_text)
+    
+    # Ensure proper headings
+    response_text = re.sub(r'##(?=\S)', r'## ', response_text)
+    
+    # Ensure proper list formatting with newlines
+    response_text = re.sub(r'(\n\s*-\s+)', r'\n\n- ', response_text)
+    
+    # Cleanup any broken markdown
+    response_text = re.sub(r'\|\|', '', response_text)
+    
+    result['final_response'] = response_text
+    return result
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5001))
+    logger.info(f"Starting Legal Research API on port {port}")
+    app.run(host="0.0.0.0", port=port, debug=True)  

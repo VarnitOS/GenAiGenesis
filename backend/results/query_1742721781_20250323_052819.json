@@ -1,0 +1,15 @@
+{
+  "query_id": "query_1742721781",
+  "query": "What are the current legal requirements for employment-based immigration visas in the United States, particularly for H-1B and EB-2 categories? I need to understand the application process, eligibility criteria, and recent policy changes that might affect an employer sponsoring foreign workers.",
+  "client_understanding": {
+    "error": "'ClientConsultationAgent' object has no attribute 'embed_query'"
+  },
+  "research": {
+    "error": "Research agent error: The read operation timed out"
+  },
+  "final_response": {
+    "response": "Based on our research: ..."
+  },
+  "execution_time": 318.7027487754822,
+  "timestamp": "2025-03-23T05:28:19.764231"
+}
