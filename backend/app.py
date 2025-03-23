@@ -281,6 +281,97 @@ def server_error(error):
         'message': str(error)
     }), 500
 
+# FORM IMAGE HANDLER
+
+@app.route('/analyze', methods=['POST'])
+def analyze_form():
+    if 'form_image' not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+    
+    # Get image and knowledge level
+    file = request.files['form_image']
+    knowledge_level = int(request.form.get('knowledge_level', 1))
+    
+    # Process the image
+    img = Image.open(file.stream)
+    img_array = np.array(img)
+    
+    # Convert to grayscale if not already
+    if len(img_array.shape) > 2 and img_array.shape[2] > 1:
+        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+    else:
+        gray = img_array
+    
+    # Apply preprocessing to improve OCR accuracy
+    thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+    
+    # Perform OCR
+    text = pytesseract.image_to_string(thresh)
+    
+    # Identify form type
+    form_type = identify_form(text)
+    
+    # Use Cohere's API to generate an explanation
+    explanation = generate_explanation_with_cohere(form_type, text, knowledge_level)
+    
+    return jsonify({
+        "form_type": form_type,
+        "extracted_text": text,
+        "explanation": explanation
+    })
+
+def generate_explanation_with_cohere(form_type, text, knowledge_level):
+    """Use Cohere's Command API to generate an explanation for the form"""
+    try:
+        # Initialize the Cohere client
+        co = cohere.Client(COHERE_API_KEY)
+        
+        # Prepare the prompt based on knowledge level
+        expertise_level = "basic" if knowledge_level == 1 else "intermediate" if knowledge_level == 2 else "advanced"
+        
+        prompt = f"""
+        This is a legal form that has been identified as {form_type if form_type != "Unknown Form" else "an unknown legal form"}.
+        The OCR extracted the following text from the form:
+        
+        {text[:2000]}  # Limiting text length to respect token limits
+        
+        Please provide an explanation of this form in {expertise_level} language, explaining:
+        1. What is this form used for?
+        2. What are the key fields that need to be filled out?
+        3. What does each field mean and how should it be completed?
+        
+        The explanation should be appropriate for someone with {expertise_level} knowledge of legal terminology and concepts.
+        """
+        
+        # Generate a response using Cohere's Command model
+        response = co.generate(
+            model="command",
+            prompt=prompt,
+            max_tokens=1000,
+            temperature=0.3,
+            k=0,
+            stop_sequences=[],
+            return_likelihoods="NONE"
+        )
+        
+        # Extract and return the generated text
+        explanation = response.generations[0].text.strip()
+        
+        return {
+            "title": form_type if form_type != "Unknown Form" else "Unknown Legal Form",
+            "explanation": explanation
+        }
+        
+    except Exception as e:
+        # Log the error and return a fallback explanation
+        print(f"Error using Cohere API: {e}")
+        return {
+            "title": form_type if form_type != "Unknown Form" else "Unknown Legal Form",
+            "explanation": "We encountered an error while generating the explanation. Please try again later."
+        }
+
+
+
 if __name__ == '__main__':
     # Get port from environment or use default
     port = int(os.environ.get('PORT', 5000))
