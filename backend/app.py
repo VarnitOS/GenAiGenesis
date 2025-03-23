@@ -102,92 +102,10 @@ def search():
         if not query:
             return jsonify({"error": "Query is required"}), 400
         
-        # Generate query embedding
-        query_embedding = embedding_service.generate_embeddings([query])[0]
+        # Use the new search method
+        results = vector_db_service.search(query=query, collection_name=collection, top_k=top_k)
         
-        # Get the appropriate collection
-        if collection == "case_law":
-            collection_obj = embedding_service.case_law_collection
-        elif collection == "statutes":
-            collection_obj = embedding_service.statutes_collection
-        elif collection == "regulations":
-            collection_obj = embedding_service.regulations_collection
-        else:
-            return jsonify({"error": f"Unknown collection: {collection}"}), 400
-        
-        # Check if collection has documents
-        try:
-            data = collection_obj.get()
-            if len(data.get('ids', [])) == 0:
-                # Collection is empty, recreate it
-                success = recreate_collection(collection)
-                if not success:
-                    return jsonify({"error": f"Failed to recreate {collection} collection"}), 500
-        except Exception as e:
-            print(f"Error checking collection: {e}")
-            # Try to recreate the collection
-            success = recreate_collection(collection)
-            if not success:
-                return jsonify({"error": f"Failed to recreate {collection} collection"}), 500
-        
-        # Try direct search with the collection
-        try:
-            results = collection_obj.query(
-                query_embeddings=[query_embedding],
-                n_results=top_k
-            )
-            
-            # Format results
-            formatted_results = []
-            if results and 'ids' in results and len(results['ids']) > 0 and len(results['ids'][0]) > 0:
-                for i in range(len(results['ids'][0])):
-                    result = {
-                        "id": results['ids'][0][i],
-                        "document": results['documents'][0][i] if 'documents' in results and results['documents'][0] else "",
-                        "metadata": results['metadatas'][0][i] if 'metadatas' in results and results['metadatas'][0] else {}
-                    }
-                    formatted_results.append(result)
-            
-            return jsonify({
-                "query": query,
-                "results": formatted_results
-            })
-        except Exception as e:
-            error_msg = str(e).lower()
-            # If we encounter a dimension mismatch, try to recreate the collection
-            if "dimension" in error_msg and "match" in error_msg:
-                print(f"Dimension mismatch detected. Recreating collection.")
-                success = recreate_collection(collection)
-                if not success:
-                    return jsonify({"error": f"Failed to recreate {collection} collection"}), 500
-                
-                # Retry the search
-                try:
-                    results = collection_obj.query(
-                        query_embeddings=[query_embedding],
-                        n_results=top_k
-                    )
-                    
-                    # Format results
-                    formatted_results = []
-                    if results and 'ids' in results and len(results['ids']) > 0 and len(results['ids'][0]) > 0:
-                        for i in range(len(results['ids'][0])):
-                            result = {
-                                "id": results['ids'][0][i],
-                                "document": results['documents'][0][i] if 'documents' in results and results['documents'][0] else "",
-                                "metadata": results['metadatas'][0][i] if 'metadatas' in results and results['metadatas'][0] else {}
-                            }
-                            formatted_results.append(result)
-                    
-                    return jsonify({
-                        "query": query,
-                        "results": formatted_results
-                    })
-                except Exception as new_e:
-                    return jsonify({"error": str(new_e)}), 500
-            
-            # For other errors, just return the error message
-            return jsonify({"error": str(e)}), 500
+        return jsonify(results)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -200,23 +118,23 @@ def get_stats():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/client/understand', methods=['POST'])
-def understand_client():
-    """Process and understand a client query using Model A"""
-    data = request.json
+# @app.route('/api/client/understand', methods=['POST'])
+# def understand_client():
+#     """Process and understand a client query using Model A"""
+#     data = request.json
     
-    if not data or 'query' not in data:
-        return jsonify({"error": "Query is required"}), 400
+#     if not data or 'query' not in data:
+#         return jsonify({"error": "Query is required"}), 400
     
-    query = data['query']
+#     query = data['query']
     
-    try:
-        # Get understanding using client agent (Model A)
-        understanding = client_agent.understand_query(query)
+#     try:
+#         # Get understanding using client agent (Model A)
+#         understanding = client_agent.understand_query(query)
         
-        return jsonify(understanding)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+#         return jsonify(understanding)
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/research', methods=['POST'])
 def research():
@@ -256,10 +174,10 @@ def sync_s3():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/', methods=['GET'])
-def home():
-    """Home page redirects to the API documentation"""
-    return send_from_directory('static', 'index.html')
+# @app.route('/', methods=['GET'])
+# def home():
+#     """Home page redirects to the API documentation"""
+#     return send_from_directory('static', 'index.html')
 
 # Health check
 @app.route('/health')
@@ -286,7 +204,7 @@ def server_error(error):
     }), 500
 
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def home():
     return jsonify({
         "status": "success",
@@ -318,16 +236,17 @@ def embed_text():
         text = data['text'].strip()
         
         # Generate embeddings - Use model parameter correctly
-        response = co.embed(
-            texts=[text],
-            model="embed-english-v3.0",  # Keep the model parameter but ensure text is clean
-            input_type="search_query"
-        )
+        # response = co.embed(
+        #     texts=[text],
+        #     model="embed-english-v3.0",  # Keep the model parameter but ensure text is clean
+        #     input_type="search_query"
+        # )
+        embeddings = embedding_service.generate_embeddings([text], model="embed-english-v3.0", cache_key=f"query:{text}")
         
         return jsonify({
             "status": "success",
             "data": {
-                "embeddings": response.embeddings[0][:10] + ["..."],  # Truncated for readability
+                "embeddings": embeddings[0][:10] + ["..."],  # Truncated for readability
                 "model": "embed-english-v3.0"
             }
         })
@@ -476,19 +395,15 @@ def search_case_law():
         limit = int(data.get('limit', 5))
         filters = data.get('filters')
         
-        # Search the case law database
-        results = vector_db_service.search_case_law(
-            query=query,
-            limit=limit,
-            filters=filters
-        )
+        # Use the new search method
+        results = vector_db_service.search(query=query, collection_name='case_law', top_k=limit)
         
         return jsonify({
             "status": "success",
             "data": {
                 "query": query,
-                "result_count": len(results),
-                "results": results
+                "result_count": len(results['results']),
+                "results": results['results']
             }
         })
     except Exception as e:
@@ -516,19 +431,15 @@ def search_statutes():
         limit = int(data.get('limit', 5))
         filters = data.get('filters')
         
-        # Search the statutes database
-        results = vector_db_service.search_statutes(
-            query=query,
-            limit=limit,
-            filters=filters
-        )
+        # Use the new search method
+        results = vector_db_service.search(query=query, collection_name='statutes', top_k=limit)
         
         return jsonify({
             "status": "success",
             "data": {
                 "query": query,
-                "result_count": len(results),
-                "results": results
+                "result_count": len(results['results']),
+                "results": results['results']
             }
         })
     except Exception as e:
@@ -540,7 +451,7 @@ def search_statutes():
 
 @app.route('/api/vector-db/search', methods=['POST'])
 def search_all():
-    """Search both case law and statutes databases"""
+    """Search case law, statutes, and regulations databases"""
     try:
         data = request.json
         if not data or 'query' not in data:
@@ -553,33 +464,29 @@ def search_all():
         query = data['query'].strip()
         
         # Get optional parameters
-        limit = int(data.get('limit', 3))  # Lower default since searching both DBs
+        limit = int(data.get('limit', 3))  # Lower default since searching all DBs
         filters = data.get('filters')
         
-        # Search both databases
-        case_law_results = vector_db_service.search_case_law(
-            query=query,
-            limit=limit,
-            filters=filters.get('case_law') if filters else None
-        )
-        
-        statute_results = vector_db_service.search_statutes(
-            query=query,
-            limit=limit,
-            filters=filters.get('statutes') if filters else None
-        )
+        # Use the new search method for each collection
+        case_law_results = vector_db_service.search(query=query, collection_name='case_law', top_k=limit)
+        statute_results = vector_db_service.search(query=query, collection_name='statutes', top_k=limit)
+        regulations_results = vector_db_service.search(query=query, collection_name='regulations', top_k=limit)
         
         return jsonify({
             "status": "success",
             "data": {
                 "query": query,
                 "case_law": {
-                    "result_count": len(case_law_results),
-                    "results": case_law_results
+                    "result_count": len(case_law_results['results']),
+                    "results": case_law_results['results']
                 },
                 "statutes": {
-                    "result_count": len(statute_results),
-                    "results": statute_results
+                    "result_count": len(statute_results['results']),
+                    "results": statute_results['results']
+                },
+                "regulations": {
+                    "result_count": len(regulations_results['results']),
+                    "results": regulations_results['results']
                 }
             }
         })
@@ -597,4 +504,4 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8081))
     
     # Run app
-    app.run(host='0.0.0.0', port=port) 
+    app.run(host='0.0.0.0', port=port)

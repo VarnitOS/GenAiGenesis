@@ -2,13 +2,27 @@ import os
 import json
 from typing import List, Dict, Any, Optional
 from services.embedding_service import embedding_service
+import cohere
+import chromadb
+from chromadb.utils.embedding_functions import CohereEmbeddingFunction
+
 
 class VectorDBService:
     """Service for managing vector database operations for legal knowledge."""
     
     def __init__(self):
-        """Initialize the vector database service."""
-        self.embedding_service = embedding_service
+        self.co = cohere.Client(os.environ.get('COHERE_API_KEY'))
+
+        # Initialize ChromaDB with Cohere embedding function
+        self.embedding_function = CohereEmbeddingFunction(api_key=os.environ.get('COHERE_API_KEY'), model_name="embed-english-v3.0")
+        self.chroma_client = chromadb.PersistentClient(path="./chroma_db")  # Stores the DB locally
+        self.collection = self.chroma_client.get_or_create_collection(name="documents", embedding_function=self.embedding_function)
+
+
+
+
+        # """Initialize the vector database service."""
+        # self.embedding_service = embedding_service
         
         # Statistics tracking
         self.stats = {
@@ -163,18 +177,33 @@ class VectorDBService:
             top_k: Number of results to return
             
         Returns:
-            Dictionary containing search results
+           reranked results
         """
-        results = self.embedding_service.similarity_search(
-            query=query,
-            collection_name=collection_name,
-            top_k=top_k
-        )
+        # results = self.embedding_service.similarity_search(
+        #     query=query,
+        #     collection_name=collection_name,
+        #     top_k=top_k
+        # )
         
-        return {
-            "query": query,
-            "results": results
-        }
+        # return {
+        #     "query": query,
+        #     "results": results
+        # }
+            # Step 1: Retrieve candidates from ChromaDB
+        search_results = self.collection.query(query_texts=[query], n_results=top_k)
+
+        if not search_results['documents'][0]:  # No results found
+            return []
+
+        # Step 2: Rerank results using Cohere
+        rerank_results = self.co.rerank(
+            model="rerank-english-v2.0",
+            query=query,
+            documents=search_results['documents'][0],  # Extract documents from ChromaDB results
+            top_n=top_k
+        )
+
+        return rerank_results  # Returns reranked documents with relevance scores
     
     def get_stats(self) -> Dict[str, Dict[str, int]]:
         """Get statistics about the vector databases.

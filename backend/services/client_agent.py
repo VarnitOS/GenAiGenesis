@@ -4,7 +4,7 @@ import hashlib
 from typing import Dict, List, Any, Optional
 import cohere
 from redis import Redis
-from redisvl.utils.vectorize import CohereTextVectorizer
+# from redisvl.utils.vectorize import CohereTextVectorizer
 
 class ClientUnderstandingChain:
     """
@@ -119,67 +119,67 @@ class ClientConsultationAgent:
         # Fallback in-memory cache
         self._embedding_cache = {}
     
-    def embed_query(self, query: str) -> List[float]:
-        """A2: Cohere Embed - Generate embeddings for client query with Redis caching"""
-        # Clean input text
-        query = query.strip()
+    # def embed_query(self, query: str) -> List[float]:
+    #     """A2: Cohere Embed - Generate embeddings for client query with Redis caching"""
+    #     # Clean input text
+    #     query = query.strip()
         
-        # Generate cache key
-        cache_key = f"lm:embed:{hashlib.md5(query.encode()).hexdigest()}"
+    #     # Generate cache key
+    #     cache_key = f"lm:embed:{hashlib.md5(query.encode()).hexdigest()}"
         
-        # Check Redis cache first if enabled
-        if self.redis_enabled:
-            try:
-                cached = self.redis_client.get(cache_key)
-                if cached:
-                    return json.loads(cached)
-            except Exception as e:
-                print(f"Error reading from Redis: {e}")
-                # Fall back to in-memory cache
-                if query in self._embedding_cache:
-                    return self._embedding_cache[query]
-        # Otherwise check in-memory cache
-        elif query in self._embedding_cache:
-            return self._embedding_cache[query]
+    #     # Check Redis cache first if enabled
+    #     if self.redis_enabled:
+    #         try:
+    #             cached = self.redis_client.get(cache_key)
+    #             if cached:
+    #                 return json.loads(cached)
+    #         except Exception as e:
+    #             print(f"Error reading from Redis: {e}")
+    #             # Fall back to in-memory cache
+    #             if query in self._embedding_cache:
+    #                 return self._embedding_cache[query]
+    #     # Otherwise check in-memory cache
+    #     elif query in self._embedding_cache:
+    #         return self._embedding_cache[query]
         
-        # Generate embedding using the correct parameter format
-        try:
-            if self.redis_enabled and self.vectorizer:
-                # Using RedisVL vectorizer
-                embedding = self.vectorizer.embed(
-                    query,
-                    input_type="search_query"
-                )
-            else:
-                # Using direct Cohere API - use correct parameter
-                response = self.co.embed(
-                    texts=[query],
-                    model="embed-english-v3.0",  # Keep the model parameter but ensure text is clean
-                    input_type="search_query"
-                )
-                embedding = response.embeddings[0]
+    #     # Generate embedding using the correct parameter format
+    #     try:
+    #         if self.redis_enabled and self.vectorizer:
+    #             # Using RedisVL vectorizer
+    #             embedding = self.vectorizer.embed(
+    #                 query,
+    #                 input_type="search_query"
+    #             )
+    #         else:
+    #             # Using direct Cohere API - use correct parameter
+    #             response = self.co.embed(
+    #                 texts=[query],
+    #                 model="embed-english-v3.0",  # Keep the model parameter but ensure text is clean
+    #                 input_type="search_query"
+    #             )
+    #             embedding = response.embeddings[0]
             
-            # Cache the result
-            if self.redis_enabled:
-                try:
-                    # Store in Redis with 24-hour expiration (86400 seconds)
-                    self.redis_client.set(cache_key, json.dumps(embedding), ex=86400)
-                except Exception as e:
-                    print(f"Error writing to Redis: {e}")
-                    # Fallback to in-memory cache
-                    self._embedding_cache[query] = embedding
-            else:
-                # Fallback to in-memory cache
-                self._embedding_cache[query] = embedding
+    #         # Cache the result
+    #         if self.redis_enabled:
+    #             try:
+    #                 # Store in Redis with 24-hour expiration (86400 seconds)
+    #                 self.redis_client.set(cache_key, json.dumps(embedding), ex=86400)
+    #             except Exception as e:
+    #                 print(f"Error writing to Redis: {e}")
+    #                 # Fallback to in-memory cache
+    #                 self._embedding_cache[query] = embedding
+    #         else:
+    #             # Fallback to in-memory cache
+    #             self._embedding_cache[query] = embedding
             
-            return embedding
-        except Exception as e:
-            print(f"Error generating embedding: {e}")
-            # Return empty embedding as fallback
-            if self.redis_enabled:
-                return [0.0] * 1024  # embed-english-v3.0 dimension size
-            else:
-                return [0.0] * 1024
+    #         return embedding
+    #     except Exception as e:
+    #         print(f"Error generating embedding: {e}")
+    #         # Return empty embedding as fallback
+    #         if self.redis_enabled:
+    #             return [0.0] * 1024  # embed-english-v3.0 dimension size
+    #         else:
+    #             return [0.0] * 1024
     
     def understand_query(self, query: str) -> Dict[str, Any]:
         """Process and understand a client query using the Client Understanding Chain (A3)"""
