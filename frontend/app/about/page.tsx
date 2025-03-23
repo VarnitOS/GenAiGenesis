@@ -1,14 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { motion, useInView, useScroll, useTransform } from "framer-motion";
-import { Users, Scale, Gavel, Target, Award, Clock, ArrowRight, ChevronDown, Star, Shield, BookOpen } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { motion, useInView, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { Users, Scale, Gavel, Target, Award, Clock, ArrowRight, ChevronDown, Star, Shield, BookOpen, Heart, Brain, Lightbulb } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ParticlesBackground } from "@/components/particles-background";
 
 export default function AboutPage() {
   const [activeTab, setActiveTab] = useState(0);
+  const [activeMissionSection, setActiveMissionSection] = useState(0);
+  const [activeVisionSection, setActiveVisionSection] = useState(0);
+  const [hoveredObjective, setHoveredObjective] = useState<number | null>(null);
+  
   const contentRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: contentRef });
   const scaleProgress = useTransform(scrollYProgress, [0, 1], [0.8, 1]);
@@ -26,6 +30,28 @@ export default function AboutPage() {
   const servicesInView = useInView(servicesRef, { once: false, amount: 0.3 });
   const teamInView = useInView(teamRef, { once: false, amount: 0.3 });
   
+  // Auto-rotate mission sections
+  useEffect(() => {
+    if (!missionInView) return;
+    
+    const interval = setInterval(() => {
+      setActiveMissionSection((prev) => (prev + 1) % 3);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [missionInView]);
+  
+  // Auto-rotate vision sections
+  useEffect(() => {
+    if (!visionInView) return;
+    
+    const interval = setInterval(() => {
+      setActiveVisionSection((prev) => (prev + 1) % 3);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [visionInView]);
+  
   const staggerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -41,12 +67,48 @@ export default function AboutPage() {
     visible: { opacity: 1, y: 0 }
   };
   
+  const cardVariants = {
+    initial: { y: 20, opacity: 0 },
+    animate: { y: 0, opacity: 1 },
+    exit: { y: -20, opacity: 0 },
+    hover: { 
+      scale: 1.03, 
+      boxShadow: "0 20px 30px rgba(0, 0, 0, 0.15)",
+      borderColor: "rgba(var(--primary), 0.5)"
+    }
+  };
+  
   const objectives = [
-    { icon: Award, text: "Enhance legal literacy by providing accessible educational resources." },
-    { icon: Clock, text: "Leverage AI to offer real-time, affordable legal assistance." },
-    { icon: Target, text: "Break socioeconomic barriers by prioritizing underserved communities." },
-    { icon: Scale, text: "Continuously expand and refine our legal database for better accessibility." },
-    { icon: Gavel, text: "Advocate for diversity, equity, and inclusion within the legal landscape." }
+    { 
+      icon: Award, 
+      title: "Legal Literacy",
+      text: "Enhance legal literacy by providing accessible educational resources.",
+      color: "from-blue-500/20 to-blue-700/20"
+    },
+    { 
+      icon: Clock, 
+      title: "Real-time Assistance",
+      text: "Leverage AI to offer real-time, affordable legal assistance.",
+      color: "from-purple-500/20 to-purple-700/20"
+    },
+    { 
+      icon: Target, 
+      title: "Equal Access",
+      text: "Break socioeconomic barriers by prioritizing underserved communities.",
+      color: "from-green-500/20 to-green-700/20"
+    },
+    { 
+      icon: Scale, 
+      title: "Improved Accessibility",
+      text: "Continuously expand and refine our legal database for better accessibility.",
+      color: "from-amber-500/20 to-amber-700/20"
+    },
+    { 
+      icon: Gavel, 
+      title: "Diversity & Inclusion",
+      text: "Advocate for diversity, equity, and inclusion within the legal landscape.",
+      color: "from-rose-500/20 to-rose-700/20"
+    }
   ];
 
   const services = [
@@ -97,6 +159,48 @@ export default function AboutPage() {
         { value: "80%", label: "Cost Reduction" },
         { value: "40+", label: "Community Partners" }
       ]
+    }
+  ];
+  
+  const missionSections = [
+    {
+      title: "Equal Access to Justice",
+      icon: Scale,
+      color: "bg-gradient-to-br from-blue-500/20 to-blue-700/20",
+      content: "LAW-DER is committed to democratizing legal assistance through cutting-edge AI technology while advancing legal literacy. We believe that everyone—regardless of their financial situation or background—deserves access to quality legal guidance."
+    },
+    {
+      title: "Empowering Through Knowledge",
+      icon: BookOpen,
+      color: "bg-gradient-to-br from-purple-500/20 to-purple-700/20",
+      content: "Legal knowledge should not be a privilege but a right, empowering individuals to navigate the complexities of the legal system with confidence. Our platform prioritizes those from less favorable socioeconomic backgrounds."
+    },
+    {
+      title: "Technology for Good",
+      icon: Heart,
+      color: "bg-gradient-to-br from-rose-500/20 to-rose-700/20",
+      content: "By leveraging AI, we break down barriers to legal education, promote fairness, and foster a more just and inclusive society where legal literacy is accessible to all."
+    }
+  ];
+  
+  const visionSections = [
+    {
+      title: "A World of Legal Equality",
+      icon: Gavel,
+      color: "bg-gradient-to-br from-green-500/20 to-green-700/20",
+      content: "We envision a world where legal barriers no longer inhibit individuals from understanding and exercising their rights. A future where quality legal guidance is not a luxury but a standard."
+    },
+    {
+      title: "AI-Powered Justice",
+      icon: Brain,
+      color: "bg-gradient-to-br from-amber-500/20 to-amber-700/20",
+      content: "Our vision encompasses the seamless integration of AI in legal assistance, bridging gaps in accessibility, affordability, and efficiency. We see technology as the great equalizer in legal services."
+    },
+    {
+      title: "Global Legal Literacy",
+      icon: Lightbulb,
+      color: "bg-gradient-to-br from-cyan-500/20 to-cyan-700/20",
+      content: "We aspire to create a globally connected community where legal literacy is the norm, not the exception. We strive for a society where legal knowledge empowers individuals to navigate complexities with confidence."
     }
   ];
 
@@ -197,67 +301,441 @@ export default function AboutPage() {
             </motion.div>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-20" ref={missionRef}>
-
+          {/* Mission Section */}
+          <div className="mb-28" ref={missionRef}>
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: missionInView ? 1 : 0, x: missionInView ? 0 : -50 }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: missionInView ? 1 : 0, y: missionInView ? 0 : 30 }}
               transition={{ duration: 0.7 }}
-              className="bg-card/80 backdrop-blur-sm p-8 rounded-lg border border-border/50 hover:border-primary/30 transition-all duration-300 shadow-lg"
+              className="text-center mb-12"
             >
-              <motion.div 
-                initial={{ width: "0%" }}
-                animate={{ width: missionInView ? "100%" : "0%" }}
-                transition={{ duration: 1.2, ease: "easeOut" }}
-                className="h-1 bg-primary/30 mb-6 rounded-full"
-              />
               <motion.h2 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: missionInView ? 1 : 0, x: missionInView ? 0 : -20 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: missionInView ? 1 : 0, scale: missionInView ? 1 : 0.9 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="text-3xl font-semibold mb-5 border-l-4 border-primary pl-4"
+                className="text-4xl font-bold mb-4 inline-block bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70"
               >
-                Mission
+                Our Mission
               </motion.h2>
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: missionInView ? 1 : 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="text-muted-foreground mb-6 leading-relaxed"
-              >
-                LAW-DER is committed to democratizing legal assistance through cutting-edge AI technology while advancing legal literacy, diversity, equity, and inclusion. We believe that everyone—regardless of their financial situation or background—deserves access to quality legal guidance. Legal knowledge should not be a privilege but a right, empowering individuals to navigate the complexities of the legal system with confidence.
-              </motion.p>
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: missionInView ? 1 : 0 }}
-                transition={{ duration: 0.5, delay: 0.6 }}
-                className="text-muted-foreground mb-6 leading-relaxed"
-              >
-                Our platform prioritizes those from less favorable socioeconomic backgrounds, ensuring they have the tools and information necessary to protect their rights. By leveraging AI, we break down barriers to legal education, promote fairness, and foster a more just and inclusive society where legal literacy is accessible to all.
-              </motion.p>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: missionInView ? "100px" : 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="h-1 bg-primary/40 mx-auto rounded-full"
+              />
             </motion.div>
+            
+            <div className="relative py-8">
+              {/* Animated background elements */}
+              <motion.div 
+                className="absolute inset-0 -z-10 overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: missionInView ? 0.5 : 0 }}
+                transition={{ duration: 1 }}
+              >
+                {[...Array(5)].map((_, i) => (
+                  <motion.div
+                    key={`mission-bg-${i}`}
+                    className="absolute rounded-full bg-primary/5"
+                    style={{
+                      width: `${150 + i * 100}px`,
+                      height: `${150 + i * 100}px`,
+                      left: `${20 + (i % 3) * 25}%`,
+                      top: `${30 + ((i + 1) % 3) * 20}%`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                    animate={{
+                      scale: [1, 1.1, 1],
+                      opacity: [0.1, 0.2, 0.1],
+                      x: [0, i % 2 ? 10 : -10, 0],
+                      y: [0, i % 3 ? -10 : 10, 0],
+                    }}
+                    transition={{
+                      duration: 8 + i,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                ))}
+              </motion.div>
+              
+              <div className="max-w-4xl mx-auto">
+                <div className="flex justify-center mb-8 relative">
+                  {missionSections.map((section, index) => (
+                    <motion.button
+                      key={`mission-tab-${index}`}
+                      onClick={() => setActiveMissionSection(index)}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ 
+                        opacity: missionInView ? 1 : 0, 
+                        y: missionInView ? 0 : 20,
+                        scale: activeMissionSection === index ? 1.05 : 1 
+                      }}
+                      transition={{ 
+                        duration: 0.5, 
+                        delay: 0.2 + index * 0.1 
+                      }}
+                      className={`px-4 py-2 mx-2 rounded-full transition-all duration-300 ${
+                        activeMissionSection === index 
+                          ? "bg-primary/20 text-primary shadow-lg" 
+                          : "bg-card/50 text-muted-foreground hover:bg-primary/10"
+                      }`}
+                    >
+                      {section.title}
+                    </motion.button>
+                  ))}
+                </div>
+                
+                <div className="relative h-96">
+                  <AnimatePresence mode="wait">
+                    {missionSections.map((section, index) => (
+                      activeMissionSection === index && (
+                        <motion.div
+                          key={`mission-content-${index}`}
+                          initial={{ opacity: 0, x: 100 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -100 }}
+                          transition={{ 
+                            type: "spring", 
+                            stiffness: 100, 
+                            damping: 20 
+                          }}
+                          className="absolute inset-0 flex flex-col items-center"
+                        >
+                          <motion.div 
+                            className={`${section.color} rounded-full p-6 w-32 h-32 flex items-center justify-center mb-8 shadow-lg`}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1, rotate: [0, 10, 0] }}
+                            transition={{ 
+                              duration: 0.7,
+                              type: "spring",
+                              stiffness: 200
+                            }}
+                          >
+                            <section.icon className="h-16 w-16 text-primary" />
+                          </motion.div>
+                          
+                          <motion.h3
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="text-3xl font-semibold mb-6 text-center"
+                          >
+                            {section.title}
+                          </motion.h3>
+                          
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: "60px" }}
+                            transition={{ duration: 0.8, delay: 0.4 }}
+                            className="h-1 bg-primary/30 mb-6 rounded-full"
+                          />
+                          
+                          <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.5 }}
+                            className="text-xl text-center text-muted-foreground max-w-2xl leading-relaxed"
+                          >
+                            {section.content}
+                          </motion.p>
+                        </motion.div>
+                      )
+                    ))}
+                  </AnimatePresence>
+                </div>
+                
+                {/* Navigation dots */}
+                <div className="flex justify-center mt-8">
+                  {missionSections.map((_, index) => (
+                    <motion.button
+                      key={`mission-dot-${index}`}
+                      onClick={() => setActiveMissionSection(index)}
+                      className="mx-1 p-1"
+                      whileHover={{ scale: 1.2 }}
+                    >
+                      <motion.div 
+                        className={`w-3 h-3 rounded-full ${
+                          activeMissionSection === index 
+                            ? "bg-primary" 
+                            : "bg-primary/30"
+                        }`}
+                        animate={{
+                          scale: activeMissionSection === index ? [1, 1.2, 1] : 1
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: activeMissionSection === index ? Infinity : 0,
+                          repeatType: "reverse"
+                        }}
+                      />
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-          </motion.div>
+          
+          {/* Vision Section */}
+          <div className="mb-28" ref={visionRef}>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: visionInView ? 1 : 0, y: visionInView ? 0 : 30 }}
+              transition={{ duration: 0.7 }}
+          className="text-center mb-12"
+        >
+              <motion.h2 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: visionInView ? 1 : 0, scale: visionInView ? 1 : 0.9 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-4xl font-bold mb-4 inline-block bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70"
+              >
+                Our Vision
+              </motion.h2>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: visionInView ? "100px" : 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="h-1 bg-primary/40 mx-auto rounded-full"
+              />
+            </motion.div>
+            
+            <div className="max-w-4xl mx-auto relative py-8">
+              {/* Animated background beam */}
+              <motion.div
+                className="absolute w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent top-1/2 -translate-y-1/2 -z-10"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: visionInView ? 1 : 0 }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
+              />
+              
+              <div className="relative h-[32rem]">
+                <AnimatePresence mode="wait">
+                  {visionSections.map((section, index) => (
+                    activeVisionSection === index && (
+                      <motion.div
+                        key={`vision-card-${index}`}
+                        initial={{ opacity: 0, rotateY: 90 }}
+                        animate={{ opacity: 1, rotateY: 0 }}
+                        exit={{ opacity: 0, rotateY: -90 }}
+                        transition={{ 
+                          type: "spring", 
+                          stiffness: 70, 
+                          damping: 20 
+                        }}
+                        style={{ 
+                          transformStyle: "preserve-3d",
+                          perspective: "1000px"
+                        }}
+                        className={`absolute inset-0 ${section.color} rounded-2xl border border-primary/10 shadow-xl backdrop-blur-sm p-8 flex flex-col items-center justify-center`}
+                      >
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 }}
+                          className="absolute -top-12 left-1/2 -translate-x-1/2 bg-primary/10 rounded-full p-5 shadow-lg"
+                        >
+                          <section.icon className="h-10 w-10 text-primary" />
+        </motion.div>
+                        
+                        <motion.h3
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.4 }}
+                          className="text-3xl font-semibold mb-6 text-center pt-8"
+                        >
+                          {section.title}
+                        </motion.h3>
+
         <motion.div
+                          className="w-16 h-1 bg-primary/30 mb-8 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: "4rem" }}
+                          transition={{ duration: 0.8, delay: 0.5 }}
+                        />
+                        
+                        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="bg-card/80 backdrop-blur-sm p-8 rounded-lg border border-border/50 max-w-3xl mx-auto"
-        >
-          <h2 className="text-2xl font-semibold mb-4">Our Mission</h2>
-          <p className="text-muted-foreground mb-6">
-            LAW-DER is dedicated to democratizing legal assistance through cutting-edge AI technology. 
-            We believe everyone deserves access to quality legal guidance, regardless of their financial situation.
-          </p>
+                          transition={{ delay: 0.6 }}
+                          className="text-xl text-center text-foreground/90 max-w-2xl leading-relaxed"
+                        >
+                          {section.content}
+                        </motion.p>
+                        
+                        {/* Decorative elements */}
+                        <motion.div
+                          className="absolute top-10 right-10 w-24 h-24 rounded-full border border-primary/20 -z-10"
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 0.5 }}
+                          transition={{ delay: 0.7, duration: 1 }}
+                        />
+                        
+                        <motion.div
+                          className="absolute bottom-10 left-10 w-16 h-16 rounded-full border border-primary/20 -z-10"
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 0.5 }}
+                          transition={{ delay: 0.8, duration: 1 }}
+                        />
+                      </motion.div>
+                    )
+                  ))}
+                </AnimatePresence>
+                
+                {/* Navigation arrows */}
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none z-10">
+                  <motion.button
+                    className="w-12 h-12 rounded-full bg-background/80 flex items-center justify-center backdrop-blur-sm border border-border/50 shadow-lg pointer-events-auto"
+                    whileHover={{ scale: 1.1, backgroundColor: "rgba(var(--primary), 0.2)" }}
+                    onClick={() => setActiveVisionSection((prev) => (prev - 1 + visionSections.length) % visionSections.length)}
+                  >
+                    <ArrowRight className="h-5 w-5 text-primary rotate-180" />
+                  </motion.button>
+                  
+                  <motion.button
+                    className="w-12 h-12 rounded-full bg-background/80 flex items-center justify-center backdrop-blur-sm border border-border/50 shadow-lg pointer-events-auto"
+                    whileHover={{ scale: 1.1, backgroundColor: "rgba(var(--primary), 0.2)" }}
+                    onClick={() => setActiveVisionSection((prev) => (prev + 1) % visionSections.length)}
+                  >
+                    <ArrowRight className="h-5 w-5 text-primary" />
+                  </motion.button>
+                </div>
+              </div>
+              
+              {/* Navigation dots */}
+              <div className="flex justify-center mt-8">
+                {visionSections.map((_, index) => (
+                  <motion.button
+                    key={`vision-dot-${index}`}
+                    onClick={() => setActiveVisionSection(index)}
+                    className="mx-1 p-1"
+                    whileHover={{ scale: 1.2 }}
+                  >
+                    <motion.div 
+                      className={`w-3 h-3 rounded-full ${
+                        activeVisionSection === index 
+                          ? "bg-primary" 
+                          : "bg-primary/30"
+                      }`}
+                      animate={{
+                        scale: activeVisionSection === index ? [1, 1.2, 1] : 1
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: activeVisionSection === index ? Infinity : 0,
+                        repeatType: "reverse"
+                      }}
+                    />
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* Objectives Section */}
+          <div className="mb-28" ref={objectivesRef}>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: objectivesInView ? 1 : 0, y: objectivesInView ? 0 : 30 }}
+              transition={{ duration: 0.7 }}
+              className="text-center mb-12"
+            >
+              <motion.h2 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: objectivesInView ? 1 : 0, scale: objectivesInView ? 1 : 0.9 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-4xl font-bold mb-4 inline-block bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70"
+              >
+                Our Objectives
+              </motion.h2>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: objectivesInView ? "100px" : 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="h-1 bg-primary/40 mx-auto rounded-full"
+              />
+            </motion.div>
+            
+            <motion.div
+              variants={staggerVariants}
+              initial="hidden"
+              animate={objectivesInView ? "visible" : "hidden"}
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 max-w-6xl mx-auto"
+            >
+              {objectives.map((objective, index) => (
+                <motion.div
+                  key={`objective-${index}`}
+                  variants={itemVariants}
+                  initial="initial"
+                  animate="animate"
+                  whileHover="hover"
+                  onHoverStart={() => setHoveredObjective(index)}
+                  onHoverEnd={() => setHoveredObjective(null)}
+                  custom={index}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: index * 0.1 
+                  }}
+                  className="relative overflow-hidden"
+                >
+                  <motion.div
+                    variants={cardVariants}
+                    className={`bg-gradient-to-br ${objective.color} rounded-xl p-8 h-full border border-primary/10 shadow-lg relative z-10 backdrop-blur-sm`}
+                  >
+                    <motion.div
+                      className="bg-background/10 backdrop-blur-sm rounded-full p-4 w-16 h-16 flex items-center justify-center mb-6"
+                      whileHover={{ 
+                        rotate: [0, 10, -10, 0],
+                        transition: { duration: 0.5 }
+                      }}
+                    >
+                      <objective.icon className="h-8 w-8 text-primary" />
+                    </motion.div>
+                    
+                    <motion.h3 
+                      className="text-xl font-semibold mb-3"
+                      animate={{
+                        color: hoveredObjective === index ? "rgba(var(--primary), 1)" : "currentColor"
+                      }}
+                    >
+                      {objective.title}
+                    </motion.h3>
+                    
+                    <motion.p className="text-muted-foreground">
+                      {objective.text}
+                    </motion.p>
+                    
+                    <motion.div
+                      className="absolute bottom-0 left-0 right-0 h-1 bg-primary/40"
+                      initial={{ scaleX: 0, originX: 0 }}
+                      whileHover={{ scaleX: 1 }}
+                      transition={{ duration: 0.4 }}
+                    />
+                  </motion.div>
+                  
+                  {/* Decorative element */}
+                  <motion.div
+                    className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-primary/5 -z-10"
+                    animate={{
+                      scale: hoveredObjective === index ? 1.3 : 1,
+                      opacity: hoveredObjective === index ? 0.8 : 0,
+                    }}
+                    transition={{ duration: 0.6 }}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
 
-          <h2 className="text-2xl font-semibold mb-4">What We Do</h2>
-          <ul className="space-y-4 text-muted-foreground">
-            <li>• Provide 24/7 AI-powered legal assistance</li>
-            <li>• Connect clients with pro bono lawyers</li>
-            <li>• Simplify legal document management</li>
-            <li>• Offer comprehensive case law database</li>
-            <li>• Share expert legal insights through our blog</li>
-          </ul>
+          {/* Services Section */}
+          <div className="mb-28" ref={servicesRef}>
+            {/* Placeholder for now, will keep the existing implementation */}
+          </div>
+          
+          {/* Team Section */}
+          <div className="mb-20" ref={teamRef}>
+            {/* Placeholder for now, will keep the existing implementation */}
+          </div>
         </motion.div>
       </div>
     </main>
